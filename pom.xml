@@ -21,6 +21,8 @@
         <swagger-core.version>2.2.31</swagger-core.version>
         <flyway.version>11.9.0</flyway.version>
         <springdoc-openapi-starter.version>2.8.8</springdoc-openapi-starter.version>
+        <spring-security.version>6.5.0</spring-security.version>
+        <spring-boot-starter-security.version>3.5.0</spring-boot-starter-security.version>
     </properties>
     <dependencies>
         <dependency>
@@ -128,6 +130,16 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc-openapi-starter.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+            <version>${spring-boot-starter-security.version}</version>
         </dependency>
     </dependencies>
 

@@ -22,7 +22,7 @@ data class UserEntity (
     @Column(name="created_time")
     var createdTime: ZonedDateTime = ZonedDateTime.now(),
     @Column(name="modified_by")
-    var modifiedBy: Int = 0,
+    var modifiedBy: Int? = null,
     @Column(name="modified_time")
-    var modifiedTime: ZonedDateTime = ZonedDateTime.now(),
+    var modifiedTime: ZonedDateTime? = null,
 )

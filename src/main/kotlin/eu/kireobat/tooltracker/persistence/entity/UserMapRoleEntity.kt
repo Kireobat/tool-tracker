@@ -4,15 +4,19 @@ import jakarta.persistence.*
 import java.time.ZonedDateTime
 
 @Entity
-@Table(name="tool_types")
-data class ToolTypeEntity (
+@Table(name="users_map_roles")
+data class UserMapRoleEntity (
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "toolTypesSeq")
-    @SequenceGenerator(name = "toolTypesSeq", sequenceName = "tool_types_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "rolesSeq")
+    @SequenceGenerator(name = "rolesSeq", sequenceName = "roles_seq", allocationSize = 1)
     @Column(name = "id")
     var id: Int = 0,
-    @Column(name="name")
-    var name: String = "",
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    var user: UserEntity,
+    @ManyToOne
+    @JoinColumn(name="role_id")
+    var role: RoleEntity,
     @ManyToOne
     @JoinColumn(name="created_by")
     var createdBy: UserEntity,

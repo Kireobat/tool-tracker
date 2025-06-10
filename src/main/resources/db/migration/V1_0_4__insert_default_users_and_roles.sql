@@ -1,4 +1,5 @@
-INSERT INTO tool_tracker.users (id, name, password_hash, email, created_time, modified_time, created_by, modified_by) VALUES (0, 'SYSTEM', null, null, current_date, null, null, null) ON CONFLICT (id) DO NOTHING;
-INSERT INTO tool_tracker.users (id, name, password_hash, email, created_time, modified_time, created_by, modified_by) VALUES (1, 'DELETED', null, null, current_date, null, null, null) ON CONFLICT (id) DO NOTHING;
-INSERT INTO tool_tracker.roles (id, name, description, created_time, modified_time, created_by, modified_by) VALUES (0, 'admin','role with all permissions', current_date, null,0, null) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.users (id, name, created_time, created_by) VALUES (0, 'SYSTEM', current_date, 0) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.users (id, name, created_time, created_by) VALUES (1, 'DELETED', current_date, 0) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.roles (id, name, description, created_time, created_by) VALUES (0, 'ROLE_ADMIN','role with all permissions', current_date, 0) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.roles (id, name, description, created_time, created_by) VALUES (1, 'ROLE_USER','default user', current_date, 0) ON CONFLICT (id) DO NOTHING;
 INSERT INTO tool_tracker.users_map_roles (id, user_id, role_id, created_time, created_by) VALUES (1, 0, 0, current_date, 0);

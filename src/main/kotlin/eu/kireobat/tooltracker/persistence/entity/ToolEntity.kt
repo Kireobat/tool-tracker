@@ -28,7 +28,7 @@ data class ToolEntity (
     var createdTime: ZonedDateTime = ZonedDateTime.now(),
     @ManyToOne
     @JoinColumn(name="modified_by")
-    var modifiedBy: UserEntity,
+    var modifiedBy: UserEntity?,
     @Column(name="modified_time")
-    var modifiedTime: ZonedDateTime = ZonedDateTime.now(),
+    var modifiedTime: ZonedDateTime? = null,
 )
