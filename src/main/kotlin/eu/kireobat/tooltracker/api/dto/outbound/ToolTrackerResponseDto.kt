@@ -1,4 +1,4 @@
-package eu.kireobat.tooltracker.api.dto
+package eu.kireobat.tooltracker.api.dto.outbound
 
 import org.springframework.http.HttpStatus
 import java.time.ZonedDateTime

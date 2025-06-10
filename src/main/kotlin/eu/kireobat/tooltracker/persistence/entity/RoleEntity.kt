@@ -22,7 +22,7 @@ data class RoleEntity (
     var createdTime: ZonedDateTime = ZonedDateTime.now(),
     @ManyToOne
     @JoinColumn(name="modified_by")
-    var modifiedBy: UserEntity?,
+    var modifiedBy: UserEntity? = null,
     @Column(name="modified_time")
     var modifiedTime: ZonedDateTime? = null,
 )

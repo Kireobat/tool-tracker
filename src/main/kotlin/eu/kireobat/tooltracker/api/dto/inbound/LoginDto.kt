@@ -1,4 +1,4 @@
-package eu.kireobat.tooltracker.api.dto
+package eu.kireobat.tooltracker.api.dto.inbound
 
 data class LoginDto (
     val email: String,

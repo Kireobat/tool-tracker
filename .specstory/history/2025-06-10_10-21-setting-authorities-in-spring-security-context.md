@@ -109,3 +109,294 @@ The most common cause is that your roles don't have the `ROLE_` prefix. Spring S
 
 ---
 
+_**User**_
+
+Hi, some of my other applications have a "authorize" button in swagger-ui. 
+
+I currently have an endpoint called /user/login that handles login.
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+_**User**_
+
+Hi, some of my other applications have a "authorize" button in swagger-ui.
+
+I currently have an endpoint called /user/login that handles login.
+
+how can I make that authorize context menu appear and use the login endpoint I have?
+
+---
+
+_**Assistant**_
+
+To add the "Authorize" button in Swagger UI, you need to configure OpenAPI security schemes. Here's how to set it up:
+
+## 1. Create OpenAPI Configuration
+
+````kotlin
+package eu.kireobat.tooltracker.config
+
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
+import io.swagger.v3.oas.annotations.info.Info
+import io.swagger.v3.oas.annotations.security.SecurityScheme
+import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.security.SecurityRequirement
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+@OpenAPIDefinition(
+    info = Info(
+        title = "Tool Tracker API",
+        version = "v1",
+        description = "Tool Tracker Application API"
+    )
+)
+@SecurityScheme(
+    name = "basicAuth",
+    type = SecuritySchemeType.HTTP,
+    scheme = "basic"
+)
+class OpenApiConfig {
+    
+    @Bean
+    fun customOpenAPI(): OpenAPI {
+        return OpenAPI()
+            .addSecurityItem(SecurityRequirement().addList("basicAuth"))
+    }
+}
+````
+
+## 2. Add Security Annotations to Protected Endpoints
+
+````kotlin
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+
+// Add this annotation to endpoints that require authentication
+@GetMapping("/protected-endpoint")
+@SecurityRequirement(name = "basicAuth")
+@PreAuthorize("hasAuthority('USER')")
+fun protectedEndpoint(): ResponseEntity<String> {
+    return ResponseEntity.ok("Protected data")
+}
+````
+
+## Alternative: Session-based Authentication
+
+If you want to use session-based auth (which matches your current login implementation):
+
+````kotlin
+@SecurityScheme(
+    name = "sessionAuth",
+    type = SecuritySchemeType.APIKEY,
+    in = SecuritySchemeIn.COOKIE,
+    paramName = "JSESSIONID"
+)
+class OpenApiConfig {
+    
+    @Bean
+    fun customOpenAPI(): OpenAPI {
+        return OpenAPI()
+            .addSecurityItem(SecurityRequirement().addList("sessionAuth"))
+    }
+}
+````
+
+## 3. Custom Login Integration
+
+To integrate with your custom login endpoint, you can also add a custom security scheme:
+
+````kotlin
+@SecurityScheme(
+    name = "customLogin",
+    type = SecuritySchemeType.HTTP,
+    scheme = "bearer",
+    description = "Use /api/v1/user/login endpoint to get session authentication"
+)
+````
+
+The "Authorize" button will appear in the top-right corner of your Swagger UI. Users can enter credentials there, and Swagger UI will include the appropriate authentication headers/cookies with subsequent requests.
+
+Note: For session-based authentication like yours, users would typically need to call your `/user/login` endpoint first to establish a session, then the session cookie will be used for subsequent authenticated requests.
+
+---
+
+_**User**_
+
+I want to write the username and password in the context menu that appears after clicking authorize then click submit and be logged in
+
+---
+
+_**Assistant**_
+
+To enable username/password authentication through Swagger UI's "Authorize" button, you need to configure HTTP Basic Authentication. Here's how to set it up:
+
+## 1. Configure OpenAPI with Basic Auth
+
+````kotlin
+package eu.kireobat.tooltracker.config
+
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
+import io.swagger.v3.oas.annotations.info.Info
+import io.swagger.v3.oas.annotations.security.SecurityScheme
+import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.security.SecurityRequirement
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+@OpenAPIDefinition(
+    info = Info(
+        title = "Tool Tracker API",
+        version = "v1",
+        description = "Tool Tracker Application API"
+    )
+)
+@SecurityScheme(
+    name = "basicAuth",
+    type = SecuritySchemeType.HTTP,
+    scheme = "basic",
+    description = "Enter your username and password"
+)
+class OpenApiConfig {
+    
+    @Bean
+    fun customOpenAPI(): OpenAPI {
+        return OpenAPI()
+            .addSecurityItem(SecurityRequirement().addList("basicAuth"))
+    }
+}
+````
+
+## 2. Configure Spring Security for Basic Auth
+
+````kotlin
+package eu.kireobat.tooltracker.config
+
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.web.SecurityFilterChain
+
+@Configuration
+@EnableWebSecurity
+class SecurityConfig {
+
+    @Bean
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .httpBasic { it.realmName("Tool Tracker") }
+            .sessionManagement { it.maximumSessions(1) }
+            .authorizeHttpRequests { auth ->
+                auth
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api/v1/user/login", "/api/v1/user/register").permitAll()
+                    .anyRequest().authenticated()
+            }
+            .csrf { it.disable() }
+            
+        return http.build()
+    }
+}
+````
+
+## 3. Add Security Requirements to Protected Endpoints
+
+````kotlin
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+
+// ...existing code...
+
+// Add this to any protected endpoints
+@GetMapping("/user/profile")
+@SecurityRequirement(name = "basicAuth")
+@PreAuthorize("hasAuthority('USER')")
+fun getUserProfile(): ResponseEntity<ToolTrackerResponseDto> {
+    return ResponseEntity.ok(ToolTrackerResponseDto(true, ZonedDateTime.now(), HttpStatus.OK, "User profile"))
+}
+````
+
+## 4. Create a Custom UserDetailsService
+
+````kotlin
+package eu.kireobat.tooltracker.service
+
+import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
+import org.springframework.stereotype.Service
+
+@Service
+class CustomUserDetailsService(
+    private val userService: UserService,
+    private val userMapRoleService: UserMapRoleService
+) : UserDetailsService {
+
+    override fun loadUserByUsername(username: String): UserDetails {
+        val user = userService.findByEmail(username) 
+            ?: throw UsernameNotFoundException("User not found: $username")
+        
+        val authorities = userMapRoleService.getRoles(user.id)
+        
+        return User.builder()
+            .username(user.email)
+            .password(user.password) // Should be encoded
+            .authorities(authorities)
+            .build()
+    }
+}
+````
+
+Now when you:
+1. Go to your Swagger UI at `http://localhost:8080/tool-tracker/swagger-ui/index.html#/`
+2. Click the "Authorize" button (lock icon in top-right)
+3. Enter username (email) and password
+4. Click "Authorize"
+
+The credentials will be sent with all subsequent API requests as HTTP Basic Authentication headers, and you'll be authenticated for protected endpoints.
+
+---
+
+_**User**_
+
+I need the OpenApi login to actually log me in, meaning check if the login is valid and set the session cookie if it is.
+
+---
+
+_**Assistant**_
+
+To make the OpenAPI Basic Auth actually authenticate users and set session cookies, you need to integrate it with your existing authentication logic. Here's how:
+
+## 1. Create a Custom Authentication Provider
+
+````kotlin
+package eu.kireobat.tooltracker.config
+
+import eu.kireobat.tooltracker.api.dto.inbound.LoginDto
+import eu.kireobat.tooltracker.service.UserMapRoleService
+import eu.kireobat.tooltracker.service.UserService
+import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
+import org.springframework.stereotype.Component
+
+@Component
+class CustomAuthenticationProvider(
+    private val userService: UserService,
+    private val userMapRoleService: UserMapRoleService
+) : AuthenticationProvider {
+
+    override fun authenticate(authentication:
+
+---
+

@@ -1,9 +1,12 @@
 package eu.kireobat.tooltracker.api.controller
 
+import eu.kireobat.tooltracker.api.dto.inbound.CreateDamageReportDto
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
+import eu.kireobat.tooltracker.api.dto.outbound.DamageReportDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
 import eu.kireobat.tooltracker.persistence.entity.ToolEntity
 import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
+import eu.kireobat.tooltracker.service.DamageReportService
 import eu.kireobat.tooltracker.service.ToolService
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -24,24 +27,14 @@ import org.springframework.web.bind.annotation.RestController
 @ApiResponse(responseCode = "200", description = "OK")
 @ApiResponse(responseCode = "400", description = "Bad Request", content = [Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = Schema(implementation = ToolTrackerResponseDto::class))])
 @ApiResponse(responseCode = "500", description = "Internal Server Error", content = [Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = Schema(implementation = ToolTrackerResponseDto::class))])
-@Tag(name = "Tool endpoints", description = "Endpoints related to managing tools")
-class ToolController(
-    private val toolService: ToolService,
+@Tag(name = "Damage report endpoints", description = "Endpoints related to managing damage reports")
+class DamageReportController(
+    private val damageReportService: DamageReportService,
 ) {
-    @PostMapping("/tools/register")
+
+    @PostMapping("/reports/create")
     @PreAuthorize("hasRole('USER')")
-    fun registerTool(@RequestBody registerToolDto: RegisterToolDto): ResponseEntity<ToolEntity> {
-        return ResponseEntity.ok(toolService.registerTool(registerToolDto))
-    }
-
-    @PostMapping("/tools/type/create")
-    @PreAuthorize("hasRole('USER')")
-    fun createToolType(@RequestParam name: String): ResponseEntity<ToolTypeEntity> {
-        return ResponseEntity.ok(toolService.createToolType(name))
-    }
-
-    @PostMapping("/tools/{toolId}/service")
-    fun createServiceEvent(@PathVariable toolId: Int) {
-
+    fun createReport(@RequestBody createDamageReportDto: CreateDamageReportDto): ResponseEntity<DamageReportDto> {
+        return ResponseEntity.ok(damageReportService.create(createDamageReportDto))
     }
 }

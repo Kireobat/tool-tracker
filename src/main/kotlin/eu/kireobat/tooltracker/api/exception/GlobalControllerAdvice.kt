@@ -1,6 +1,6 @@
 package eu.kireobat.tooltracker.api.exception
 
-import eu.kireobat.tooltracker.api.dto.ToolTrackerResponseDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
 import org.apache.coyote.BadRequestException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

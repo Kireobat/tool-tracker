@@ -1,4 +1,4 @@
-package eu.kireobat.tooltracker.api.dto
+package eu.kireobat.tooltracker.api.dto.inbound
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException

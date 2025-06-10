@@ -1,5 +1,6 @@
 package eu.kireobat.tooltracker.persistence.entity
 
+import eu.kireobat.tooltracker.api.dto.outbound.ToolDto
 import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
 import jakarta.persistence.*
 import java.time.ZonedDateTime
@@ -17,7 +18,7 @@ data class ToolEntity (
     @Column(name="serial")
     var serial: String = "",
     @Column(name="status")
-    var status: ToolStatusEnum,
+    var status: ToolStatusEnum = ToolStatusEnum.AVAILIABLE,
     @ManyToOne
     @JoinColumn(name="type")
     var type: ToolTypeEntity,
@@ -28,7 +29,9 @@ data class ToolEntity (
     var createdTime: ZonedDateTime = ZonedDateTime.now(),
     @ManyToOne
     @JoinColumn(name="modified_by")
-    var modifiedBy: UserEntity?,
+    var modifiedBy: UserEntity? = null,
     @Column(name="modified_time")
     var modifiedTime: ZonedDateTime? = null,
 )
+
+fun ToolEntity.toToolDto() = ToolDto(id, name, serial, status, type.toToolTypeDto(), createdTime, createdBy.toUserDto(), modifiedTime, modifiedBy?.toUserDto())

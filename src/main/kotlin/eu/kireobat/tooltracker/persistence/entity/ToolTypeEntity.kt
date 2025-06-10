@@ -1,5 +1,6 @@
 package eu.kireobat.tooltracker.persistence.entity
 
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTypeDto
 import jakarta.persistence.*
 import java.time.ZonedDateTime
 
@@ -24,3 +25,5 @@ data class ToolTypeEntity (
     @Column(name="modified_time")
     var modifiedTime: ZonedDateTime? = null,
 )
+
+fun ToolTypeEntity.toToolTypeDto() = ToolTypeDto(id, name, createdTime, createdBy.toUserDto(), modifiedTime, modifiedBy?.toUserDto())

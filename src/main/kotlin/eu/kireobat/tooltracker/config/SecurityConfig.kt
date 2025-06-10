@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -22,16 +23,9 @@ class SecurityConfig {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        return http.
-            authorizeHttpRequests { auth ->
+        return http
+            .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**",
-                        "/swagger-resources/**",
-                        "/webjars/**"
-                    ).permitAll()
                     .anyRequest().permitAll()
             }
             .csrf { csrf ->
@@ -41,7 +35,10 @@ class SecurityConfig {
                 cors.configurationSource(corsConfigurationSource())
             }
             .sessionManagement { session ->
-                session.sessionFixation { fixation -> fixation.changeSessionId() }
+                session
+                    .sessionFixation { fixation -> fixation.changeSessionId() }
+                    .maximumSessions(1)
+                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             }
             .logout { logout ->
                 logout

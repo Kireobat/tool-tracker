@@ -1,9 +1,9 @@
 package eu.kireobat.tooltracker.api.controller
 
-import eu.kireobat.tooltracker.api.dto.LoginDto
-import eu.kireobat.tooltracker.api.dto.RegisterUserDto
-import eu.kireobat.tooltracker.api.dto.ToolTrackerResponseDto
-import eu.kireobat.tooltracker.api.dto.validate
+import eu.kireobat.tooltracker.api.dto.inbound.LoginDto
+import eu.kireobat.tooltracker.api.dto.inbound.RegisterUserDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
+import eu.kireobat.tooltracker.api.dto.inbound.validate
 import eu.kireobat.tooltracker.service.UserMapRoleService
 import eu.kireobat.tooltracker.service.UserService
 import io.swagger.v3.oas.annotations.media.Content
@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -31,7 +30,7 @@ import java.time.ZonedDateTime
 class UserController(
     private val userService: UserService,
     private val authenticationManager: AuthenticationManager,
-    private val userMapRoleService: UserMapRoleService
+    private val userMapRoleService: UserMapRoleService,
 ) {
 
     @PostMapping("/user/register")
@@ -73,17 +72,4 @@ class UserController(
         )
         return ResponseEntity.ok(ToolTrackerResponseDto(true, ZonedDateTime.now(), HttpStatus.OK,"Logged in"))
     }
-
-    @GetMapping("/hasRole")
-    @PreAuthorize("hasRole('USER')")
-    fun getAdminStatus(): ResponseEntity<Boolean> {
-        return ResponseEntity.ok(true)
-    }
-
-    @GetMapping("/roles")
-    @PreAuthorize("!isAnonymous()")
-    fun protected(): List<String> {
-        return SecurityContextHolder.getContext().authentication.authorities.map { auth -> auth.authority}
-    }
-
 }

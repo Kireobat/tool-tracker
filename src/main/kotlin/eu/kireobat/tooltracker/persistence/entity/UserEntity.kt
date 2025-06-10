@@ -1,5 +1,6 @@
 package eu.kireobat.tooltracker.persistence.entity
 
+import eu.kireobat.tooltracker.api.dto.outbound.UserDto
 import jakarta.persistence.*
 import java.time.ZonedDateTime
 
@@ -26,3 +27,5 @@ data class UserEntity (
     @Column(name="modified_time")
     var modifiedTime: ZonedDateTime? = null,
 )
+
+fun UserEntity.toUserDto(): UserDto = UserDto(id, name, email, createdTime)
