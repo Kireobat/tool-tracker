@@ -1,11 +1,20 @@
 package eu.kireobat.tooltracker.service
 
 import eu.kireobat.tooltracker.api.dto.inbound.CreateToolServiceEventDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolServiceEventDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.persistence.entity.ToolServiceEventEntity
+import eu.kireobat.tooltracker.persistence.entity.toToolServiceEventDto
 import eu.kireobat.tooltracker.persistence.repository.ToolServiceRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.*
 
 @Service
 class ToolServiceEventService(
@@ -24,6 +33,30 @@ class ToolServiceEventService(
             serviceStopTime = createToolServiceEventDto.serviceStopTime,
             createdBy = userEntity
         ))
+    }
+
+    fun findById(id: Int): Optional<ToolServiceEventEntity> {
+        return toolServiceRepository.findById(id)
+    }
+
+    fun findServiceEvents(pageable: Pageable, toolId: Int?, damageReportId: Int?, lendingAgreementId: Int?, searchPeriodStart: ZonedDateTime?, searchPeriodStop: ZonedDateTime?): ToolTrackerPageDto<ToolServiceEventDto> {
+
+
+        val page = toolServiceRepository.findAllWithFilter(
+            pageable,
+            toolId,
+            damageReportId,
+            lendingAgreementId,
+            searchPeriodStart ?: ZonedDateTime.now().minusYears(100), // dette må kunne gjøres på en bedre måte
+            searchPeriodStop ?: ZonedDateTime.now().plusYears(100)
+        )
+
+        return ToolTrackerPageDto(
+            page.content.map {entity -> entity.toToolServiceEventDto()},
+            page.totalElements,
+            pageable.pageNumber,
+            pageable.pageSize
+        )
     }
 
 }
