@@ -1,6 +1,5 @@
 package eu.kireobat.tooltracker.api.dto.outbound
 
-import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
 import java.time.ZonedDateTime
 
 data class ToolServiceEventDto(

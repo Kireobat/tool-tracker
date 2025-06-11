@@ -6,7 +6,6 @@ import eu.kireobat.tooltracker.persistence.entity.UserEntity
 import eu.kireobat.tooltracker.persistence.entity.UserMapRoleEntity
 import eu.kireobat.tooltracker.persistence.repository.UserRepository
 import org.springframework.http.HttpStatus
-import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service

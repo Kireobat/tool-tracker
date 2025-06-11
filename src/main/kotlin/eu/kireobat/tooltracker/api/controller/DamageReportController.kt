@@ -1,27 +1,26 @@
 package eu.kireobat.tooltracker.api.controller
 
 import eu.kireobat.tooltracker.api.dto.inbound.CreateDamageReportDto
-import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
 import eu.kireobat.tooltracker.api.dto.outbound.DamageReportDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
-import eu.kireobat.tooltracker.persistence.entity.ToolEntity
-import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
+import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_PAGE_SIZE_INT
+import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_SORT_NO_DIRECTION
 import eu.kireobat.tooltracker.persistence.entity.toDamageReportDto
 import eu.kireobat.tooltracker.service.DamageReportService
-import eu.kireobat.tooltracker.service.ToolService
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springdoc.core.annotations.ParameterObject
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 
 @RestController
 @RequestMapping("api/v1")
@@ -37,5 +36,20 @@ class DamageReportController(
     @PreAuthorize("hasRole('USER')")
     fun createReport(@RequestBody createDamageReportDto: CreateDamageReportDto): ResponseEntity<DamageReportDto> {
         return ResponseEntity.ok(damageReportService.create(createDamageReportDto).toDamageReportDto())
+    }
+
+    @GetMapping("/reports/{id}")
+    fun getReport(@PathVariable id: Int): ResponseEntity<DamageReportDto> {
+        return ResponseEntity.ok(damageReportService.findById(id).orElseThrow { throw ResponseStatusException(
+            HttpStatus.NOT_FOUND, "Could not find damage report with id ($id)") }.toDamageReportDto())
+    }
+
+    @GetMapping("/reports")
+    fun getReports(
+        @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @RequestParam lendingAgreementId: Int?,
+        @RequestParam toolId: Int?,
+    ): ResponseEntity<ToolTrackerPageDto<DamageReportDto>> {
+        return ResponseEntity.ok(damageReportService.findReports(pageable, lendingAgreementId, toolId))
     }
 }

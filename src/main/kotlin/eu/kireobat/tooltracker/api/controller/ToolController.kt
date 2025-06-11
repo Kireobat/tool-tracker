@@ -43,7 +43,7 @@ class ToolController(
         @PathVariable id: Int
     ): ResponseEntity<ToolDto> {
         return ResponseEntity.ok(toolService.findById(id).orElseThrow { throw ResponseStatusException(
-            HttpStatus.NOT_FOUND, "Could not find service event with id ($id)") }.toToolDto())
+            HttpStatus.NOT_FOUND, "Could not find tool with id ($id)") }.toToolDto())
     }
 
     @GetMapping("/tools")

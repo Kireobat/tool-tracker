@@ -1,19 +1,13 @@
 package eu.kireobat.tooltracker.persistence.repository
 
-import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_PAGE_SIZE_INT
-import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_SORT_NO_DIRECTION
 import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
-import eu.kireobat.tooltracker.persistence.entity.RoleEntity
 import eu.kireobat.tooltracker.persistence.entity.ToolEntity
-import org.springdoc.core.annotations.ParameterObject
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import org.springframework.data.web.PageableDefault
 import org.springframework.stereotype.Repository
-import org.springframework.web.bind.annotation.RequestParam
 
 @Repository
 interface ToolRepository: JpaRepository<ToolEntity, Int> {

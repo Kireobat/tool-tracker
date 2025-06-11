@@ -18,7 +18,7 @@ data class ToolEntity (
     @Column(name="serial")
     var serial: String = "",
     @Column(name="status")
-    var status: ToolStatusEnum = ToolStatusEnum.AVAILIABLE,
+    var status: ToolStatusEnum = ToolStatusEnum.AVAILABLE,
     @ManyToOne
     @JoinColumn(name="type")
     var type: ToolTypeEntity,

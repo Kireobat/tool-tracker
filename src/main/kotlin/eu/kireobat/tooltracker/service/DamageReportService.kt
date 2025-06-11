@@ -1,8 +1,12 @@
 package eu.kireobat.tooltracker.service
 
 import eu.kireobat.tooltracker.api.dto.inbound.CreateDamageReportDto
+import eu.kireobat.tooltracker.api.dto.outbound.DamageReportDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.persistence.entity.DamageReportEntity
+import eu.kireobat.tooltracker.persistence.entity.toDamageReportDto
 import eu.kireobat.tooltracker.persistence.repository.DamageReportRepository
+import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
@@ -38,5 +42,21 @@ class DamageReportService(
 
     fun findById(id: Int): Optional<DamageReportEntity> {
         return damageReportRepository.findById(id)
+    }
+
+    fun findReports(pageable: Pageable, lendingAgreementId: Int?, toolId: Int?): ToolTrackerPageDto<DamageReportDto> {
+
+        val page = damageReportRepository.findAllWithFilter(
+            pageable,
+            lendingAgreementId,
+            toolId
+        )
+
+        return ToolTrackerPageDto(
+            page.content.map {entity -> entity.toDamageReportDto()},
+            page.totalElements,
+            pageable.pageNumber,
+            pageable.pageSize
+        )
     }
 }
