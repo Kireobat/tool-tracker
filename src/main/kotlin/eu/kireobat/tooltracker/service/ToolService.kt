@@ -4,7 +4,8 @@ import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
-import eu.kireobat.tooltracker.persistence.entity.*
+import eu.kireobat.tooltracker.persistence.entity.ToolEntity
+import eu.kireobat.tooltracker.persistence.entity.toToolDto
 import eu.kireobat.tooltracker.persistence.repository.ToolRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
@@ -34,7 +35,7 @@ class ToolService(
         return toolRepository.findById(toolId)
     }
 
-    fun findTools(pageable: Pageable, name: String?, serial: String?, toolTypeId: Int?, status: ToolStatusEnum?): ToolTrackerPageDto<ToolDto> {
+    fun findTools(pageable: Pageable, name: String? = null, serial: String? = null, toolTypeId: Int? = null, status: ToolStatusEnum? = null): ToolTrackerPageDto<ToolDto> {
 
         val page = toolRepository.findAllWithFilter(
             pageable,

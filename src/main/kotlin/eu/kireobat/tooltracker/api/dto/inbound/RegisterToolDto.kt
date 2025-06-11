@@ -6,5 +6,5 @@ data class RegisterToolDto(
     val name: String,
     val serial: String,
     val type: Int,
-    val status: ToolStatusEnum?
+    val status: ToolStatusEnum? = null
 )

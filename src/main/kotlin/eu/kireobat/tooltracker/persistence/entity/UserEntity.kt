@@ -15,7 +15,7 @@ data class UserEntity (
     @Column(name="name")
     var name: String = "",
     @Column(name="email")
-    var email: String = "",
+    var email: String? = "",
     @Column(name="password_hash")
     var passwordHash: String = "",
     @Column(name="created_by")
@@ -28,4 +28,4 @@ data class UserEntity (
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun UserEntity.toUserDto(): UserDto = UserDto(id, name, email, createdTime)
+fun UserEntity.toUserDto(): UserDto = UserDto(id, name, email ?: "", createdTime)

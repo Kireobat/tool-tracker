@@ -1,0 +1,1 @@
+INSERT INTO tool_tracker.lending_agreements (id, tool_id, borrower_id, lending_start_time, expected_return_time, created_time, created_by) VALUES (1, 1,3,current_date,current_date, current_date, 0);
