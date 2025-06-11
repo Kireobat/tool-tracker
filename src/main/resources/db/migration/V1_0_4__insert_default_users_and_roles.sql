@@ -1,5 +1,5 @@
-INSERT INTO tool_tracker.users (id, name, created_time, created_by) VALUES (0, 'SYSTEM', current_date, 0) ON CONFLICT (id) DO NOTHING;
-INSERT INTO tool_tracker.users (id, name, created_time, created_by) VALUES (1, 'DELETED', current_date, 0) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.users (id, name, email, created_time, created_by) VALUES (0, 'SYSTEM', 'system@tool-tracker.kireobat.eu', current_date, 0) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.users (id, name, email, created_time, created_by) VALUES (1, 'DELETED', 'deleted@tool-tracker.kireobat.eu', current_date, 0) ON CONFLICT (id) DO NOTHING;
 INSERT INTO tool_tracker.roles (id, name, description, created_time, created_by) VALUES (0, 'ROLE_ADMIN','role with all permissions', current_date, 0) ON CONFLICT (id) DO NOTHING;
 INSERT INTO tool_tracker.roles (id, name, description, created_time, created_by) VALUES (1, 'ROLE_USER','default user', current_date, 0) ON CONFLICT (id) DO NOTHING;
 INSERT INTO tool_tracker.users_map_roles (id, user_id, role_id, created_time, created_by) VALUES (1, 0, 0, current_date, 0);

@@ -1,5 +1,6 @@
 package eu.kireobat.tooltracker.persistence.entity
 
+import eu.kireobat.tooltracker.api.dto.outbound.FeeDto
 import eu.kireobat.tooltracker.common.enums.FeeStatusEnum
 import jakarta.persistence.*
 import java.time.ZonedDateTime
@@ -32,3 +33,5 @@ data class FeeEntity(
     @Column(name="modified_time")
     var modifiedTime: ZonedDateTime? = null,
 )
+
+fun FeeEntity.toFeeDto() = FeeDto(id,lendingAgreement.toLendingAgreementDto(),reason,feeAmount,status,createdTime,createdBy.toUserDto(),modifiedTime,modifiedBy?.toUserDto())

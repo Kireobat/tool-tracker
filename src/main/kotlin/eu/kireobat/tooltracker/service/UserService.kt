@@ -84,7 +84,7 @@ class UserService(
 
         return when (val principal = SecurityContextHolder.getContext().authentication.principal) {
             // email/pass users must have email
-            is CustomUserDetails -> userRepository.findByEmail(principal.username!!).orElseThrow { ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found") }
+            is CustomUserDetails -> userRepository.findByEmail(principal.username).orElseThrow { ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found") }
             else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to parse authentication. (Not local or github)")
         }
     }

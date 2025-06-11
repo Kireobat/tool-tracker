@@ -88,3 +88,776 @@ The approach in the Baeldung article is still the recommended way. The only mino
 
 ---
 
+_**User**_
+
+@workspace  Can you write a test for TaxCollector.kt? I need to verify that it is able to check for broken contracts and create fees if any contracts are broken. Id also like if you could expand FeeServiceTest the new functions I created.
+
+---
+
+_**Assistant**_
+
+I'll write tests for the `TaxCollector` and expand the `FeeServiceTest` to cover the new functions. Let me create comprehensive tests for both.
+
+First, let's create the `TaxCollectorTest`:
+
+````kotlin
+package eu.kireobat.tooltracker.scheduled
+
+import eu.kireobat.tooltracker.TestContainerConfiguration
+import eu.kireobat.tooltracker.TestDataLoaderUtil
+import eu.kireobat.tooltracker.api.dto.inbound.CreateFeeDto
+import eu.kireobat.tooltracker.api.dto.inbound.CreateLendingAgreementDto
+import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_LATE_FEE_AMOUNT_NOK
+import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_LATE_FEE_REASON
+import eu.kireobat.tooltracker.common.enums.FeeStatusEnum
+import eu.kireobat.tooltracker.persistence.entity.LendingAgreementEntity
+import eu.kireobat.tooltracker.persistence.entity.ToolEntity
+import eu.kireobat.tooltracker.persistence.entity.UserEntity
+import eu.kireobat.tooltracker.persistence.repository.*
+import eu.kireobat.tooltracker.scheduled.TaxCollector
+import eu.kireobat.tooltracker.service.CustomUserDetails
+import eu.kireobat.tooltracker.service.FeeService
+import eu.kireobat.tooltracker.service.LendingAgreementService
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatus
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
+import java.time.ZonedDateTime
+import javax.sql.DataSource
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+@SpringBootTest
+@Transactional
+class TaxCollectorTest : TestContainerConfiguration() {
+
+    @Autowired
+    private lateinit var taxCollector: TaxCollector
+
+    @Autowired
+    private lateinit var feeService: FeeService
+
+    @Autowired
+    private lateinit var lendingAgreementService: LendingAgreementService
+
+    @Autowired
+    private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var toolRepository: ToolRepository
+
+    @Autowired
+    private lateinit var lendingAgreementRepository: LendingAgreementRepository
+
+    @Autowired
+    private lateinit var feeRepository: FeeRepository
+
+    @Autowired
+    private lateinit var roleRepository: RoleRepository
+
+    @Autowired
+    private lateinit var dataSource: DataSource
+
+    private lateinit var testUser: UserEntity
+    private lateinit var borrowerUser: UserEntity
+    private lateinit var taxCollectorUser: UserEntity
+    private lateinit var testTool: ToolEntity
+
+    @BeforeEach
+    fun setup() {
+        SecurityContextHolder.clearContext()
+        TestDataLoaderUtil().cleanAllTestData(dataSource)
+        TestDataLoaderUtil().insertUsers(dataSource)
+        TestDataLoaderUtil().insertRoles(dataSource)
+        TestDataLoaderUtil().insertUsersMapRoles(dataSource)
+        TestDataLoaderUtil().insertToolTypes(dataSource)
+        TestDataLoaderUtil().insertTools(dataSource)
+        TestDataLoaderUtil().syncSequences(dataSource)
+
+        // Create test role
+        val defaultRole = roleRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected default role") }
+
+        // Create test users
+        testUser = userRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test user") }
+        taxCollectorUser = userRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected tax collector user") }
+        borrowerUser = userRepository.findById(3).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected borrower user") }
+
+        testTool = toolRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test tool") }
+
+        val customUserDetails = CustomUserDetails(testUser, listOf(SimpleGrantedAuthority(defaultRole.name)))
+
+        // Set authentication context
+        val auth = UsernamePasswordAuthenticationToken(
+            customUserDetails,
+            "password",
+            listOf(SimpleGrantedAuthority(defaultRole.name))
+        )
+        SecurityContextHolder.getContext().authentication = auth
+    }
+
+    @Test
+    fun `should not create fees when no broken contracts exist`() {
+        // Create a valid lending agreement that's not overdue
+        val validAgreement = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(1),
+                expectedReturnTime = ZonedDateTime.now().plusDays(7)
+            )
+        )
+
+        val feesBefore = feeRepository.count()
+
+        // Run the tax collector
+        taxCollector.checkForBrokenContracts()
+
+        val feesAfter = feeRepository.count()
+
+        assertEquals(feesBefore, feesAfter)
+    }
+
+    @Test
+    fun `should create fees for overdue contracts without existing fees`() {
+        // Create an overdue lending agreement
+        val overdueAgreement = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(10),
+                expectedReturnTime = ZonedDateTime.now().minusDays(3)
+            )
+        )
+
+        val feesBefore = feeRepository.count()
+
+        // Run the tax collector
+        taxCollector.checkForBrokenContracts()
+
+        val feesAfter = feeRepository.count()
+        val createdFees = feeService.findFeesByLendingAgreementId(overdueAgreement.id)
+
+        assertEquals(feesBefore + 1, feesAfter)
+        assertEquals(1, createdFees.size)
+        assertEquals(DEFAULT_LATE_FEE_REASON, createdFees[0].reason)
+        assertEquals(DEFAULT_LATE_FEE_AMOUNT_NOK, createdFees[0].feeAmount)
+        assertEquals(FeeStatusEnum.UNPAID, createdFees[0].status)
+        assertEquals(taxCollectorUser.id, createdFees[0].createdBy.id)
+    }
+
+    @Test
+    fun `should not create additional fees for contracts that already have recent fees`() {
+        // Create an overdue lending agreement
+        val overdueAgreement = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(10),
+                expectedReturnTime = ZonedDateTime.now().minusDays(3)
+            )
+        )
+
+        // Create a recent fee by tax collector
+        feeService.createFee(
+            CreateFeeDto(
+                lendingAgreementId = overdueAgreement.id,
+                reason = "Recent fee",
+                feeAmount = 100
+            ),
+            taxCollectorUser
+        )
+
+        val feesBefore = feeRepository.count()
+
+        // Run the tax collector
+        taxCollector.checkForBrokenContracts()
+
+        val feesAfter = feeRepository.count()
+
+        assertEquals(feesBefore, feesAfter)
+    }
+
+    @Test
+    fun `should create fees for contracts with old tax collector fees`() {
+        // Create an overdue lending agreement
+        val overdueAgreement = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(20),
+                expectedReturnTime = ZonedDateTime.now().minusDays(10)
+            )
+        )
+
+        // Create an old fee by tax collector (more than 7 days old)
+        val oldFee = feeService.createFee(
+            CreateFeeDto(
+                lendingAgreementId = overdueAgreement.id,
+                reason = "Old fee",
+                feeAmount = 100
+            ),
+            taxCollectorUser
+        )
+
+        // Manually set the creation time to be more than 7 days ago
+        oldFee.createdTime = ZonedDateTime.now().minusDays(8)
+        feeRepository.save(oldFee)
+
+        val feesBefore = feeRepository.count()
+
+        // Run the tax collector
+        taxCollector.checkForBrokenContracts()
+
+        val feesAfter = feeRepository.count()
+        val allFees = feeService.findFeesByLendingAgreementId(overdueAgreement.id)
+
+        assertEquals(feesBefore + 1, feesAfter)
+        assertEquals(2, allFees.size)
+        assertTrue(allFees.any { it.reason == DEFAULT_LATE_FEE_REASON })
+    }
+
+    @Test
+    fun `should only consider fees created by tax collector for timing check`() {
+        // Create an overdue lending agreement
+        val overdueAgreement = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(10),
+                expectedReturnTime = ZonedDateTime.now().minusDays(3)
+            )
+        )
+
+        // Create a recent fee by a different user (not tax collector)
+        feeService.createFee(
+            CreateFeeDto(
+                lendingAgreementId = overdueAgreement.id,
+                reason = "User fee",
+                feeAmount = 50
+            ),
+            testUser
+        )
+
+        val feesBefore = feeRepository.count()
+
+        // Run the tax collector
+        taxCollector.checkForBrokenContracts()
+
+        val feesAfter = feeRepository.count()
+        val allFees = feeService.findFeesByLendingAgreementId(overdueAgreement.id)
+
+        // Should create a new fee because the existing fee was not created by tax collector
+        assertEquals(feesBefore + 1, feesAfter)
+        assertEquals(2, allFees.size)
+        assertTrue(allFees.any { it.createdBy.id == taxCollectorUser.id })
+    }
+}
+````
+
+Now let's expand the `FeeServiceTest` to include the new functions:
+
+````kotlin
+package eu.kireobat.tooltracker.service
+
+import eu.kireobat.tooltracker.TestContainerConfiguration
+import eu.kireobat.tooltracker.TestDataLoaderUtil
+import eu.kireobat.tooltracker.api.dto.inbound.CreateFeeDto
+import eu.kireobat.tooltracker.api.dto.inbound.CreateLendingAgreementDto
+import eu.kireobat.tooltracker.api.dto.inbound.PatchLendingAgreementDto
+import eu.kireobat.tooltracker.common.enums.FeeStatusEnum
+import eu.kireobat.tooltracker.persistence.entity.LendingAgreementEntity
+import eu.kireobat.tooltracker.persistence.entity.ToolEntity
+import eu.kireobat.tooltracker.persistence.entity.UserEntity
+import eu.kireobat.tooltracker.persistence.repository.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpStatus
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
+import java.time.ZonedDateTime
+import javax.sql.DataSource
+import kotlin.test.assertNotNull
+
+@SpringBootTest
+@Transactional
+class FeeServiceTest: TestContainerConfiguration() {
+
+    @Autowired
+    private lateinit var lendingAgreementService: LendingAgreementService
+
+    @Autowired
+    private lateinit var feeService: FeeService
+
+    @Autowired
+    private lateinit var feeRepository: FeeRepository
+
+    @Autowired
+    private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var toolRepository: ToolRepository
+
+    @Autowired
+    private lateinit var lendingAgreementRepository: LendingAgreementRepository
+
+    @Autowired
+    private lateinit var roleRepository: RoleRepository
+
+    @Autowired
+    private lateinit var dataSource: DataSource
+
+    private lateinit var testUser: UserEntity
+    private lateinit var borrowerUser: UserEntity
+    private lateinit var testTool: ToolEntity
+    private lateinit var testLendingAgreement: LendingAgreementEntity
+
+    @BeforeEach
+    fun setup() {
+        SecurityContextHolder.clearContext()
+        TestDataLoaderUtil().cleanAllTestData(dataSource)
+        TestDataLoaderUtil().insertUsers(dataSource)
+        TestDataLoaderUtil().insertRoles(dataSource)
+        TestDataLoaderUtil().insertUsersMapRoles(dataSource)
+        TestDataLoaderUtil().insertToolTypes(dataSource)
+        TestDataLoaderUtil().insertTools(dataSource)
+        TestDataLoaderUtil().insertLendingAgreements(dataSource)
+        TestDataLoaderUtil().syncSequences(dataSource)
+
+        // Create test role
+        val defaultRole = roleRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected default role") }
+
+        // Create test user
+        testUser = userRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test user") }
+        borrowerUser = userRepository.findById(3).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected borrower user") }
+
+        testTool = toolRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test tool") }
+
+        // Create test lending agreement
+        testLendingAgreement = lendingAgreementRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test lendingAgreement") }
+
+        val customUserDetails = CustomUserDetails(testUser, listOf(SimpleGrantedAuthority(defaultRole.name)))
+
+        // Set authentication context
+        val auth = UsernamePasswordAuthenticationToken(
+            customUserDetails,
+            "password",
+            listOf(SimpleGrantedAuthority(defaultRole.name))
+        )
+        SecurityContextHolder.getContext().authentication = auth
+    }
+
+    @Test
+    fun `should create fee successfully`() {
+        val createFeeDto = CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "Late return fee",
+            feeAmount = 250
+        )
+
+        val result = feeService.createFee(createFeeDto)
+
+        assertNotNull(result)
+        assertEquals(testLendingAgreement.id, result.lendingAgreement.id)
+        assertEquals("Late return fee", result.reason)
+        assertEquals(250, result.feeAmount)
+        assertEquals(FeeStatusEnum.UNPAID, result.status)
+        assertEquals(testUser.id, result.createdBy.id)
+    }
+
+    @Test
+    fun `should create fee with override user`() {
+        val createFeeDto = CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "System generated fee",
+            feeAmount = 100
+        )
+
+        val result = feeService.createFee(createFeeDto, borrowerUser)
+
+        assertNotNull(result)
+        assertEquals(borrowerUser.id, result.createdBy.id)
+        assertEquals("System generated fee", result.reason)
+    }
+
+    @Test
+    fun `should find fee by id`() {
+        val createFeeDto = CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "Test fee",
+            feeAmount = 150
+        )
+
+        val createdFee = feeService.createFee(createFeeDto)
+        val foundFee = feeService.findById(createdFee.id)
+
+        assertTrue(foundFee.isPresent)
+        assertEquals(createdFee.id, foundFee.get().id)
+        assertEquals("Test fee", foundFee.get().reason)
+    }
+
+    @Test
+    fun `should find fees by lending agreement id`() {
+        val createFeeDto1 = CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "First fee",
+            feeAmount = 100
+        )
+
+        val createFeeDto2 = CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "Second fee",
+            feeAmount = 200
+        )
+
+        feeService.createFee(createFeeDto1)
+        feeService.createFee(createFeeDto2)
+
+        val fees = feeService.findFeesByLendingAgreementId(testLendingAgreement.id)
+
+        assertEquals(2, fees.size)
+        assertTrue(fees.any { it.reason == "First fee" })
+        assertTrue(fees.any { it.reason == "Second fee" })
+    }
+
+    @Test
+    fun `should find fees with filters`() {
+        // Create another lending agreement for testing
+        val anotherAgreement = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now(),
+                expectedReturnTime = ZonedDateTime.now().plusDays(7)
+            )
+        )
+
+        // Create fees with different properties
+        val fee1 = feeService.createFee(CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "High fee",
+            feeAmount = 500
+        ))
+
+        val fee2 = feeService.createFee(CreateFeeDto(
+            lendingAgreementId = anotherAgreement.id,
+            reason = "Low fee",
+            feeAmount = 100
+        ))
+
+        // Update one fee status
+        fee1.status = FeeStatusEnum.PAID
+        feeRepository.save(fee1)
+
+        val pageable = PageRequest.of(0, 10)
+
+        // Test filter by lending agreement ID
+        val resultByAgreement = feeService.findFees(
+            pageable = pageable,
+            lendingAgreementId = testLendingAgreement.id
+        )
+
+        assertEquals(1, resultByAgreement.totalItems)
+        assertEquals(testLendingAgreement.id, resultByAgreement.page[0].lendingAgreement.id)
+
+        // Test filter by borrower ID
+        val resultByBorrower = feeService.findFees(
+            pageable = pageable,
+            borrowerId = borrowerUser.id
+        )
+
+        assertEquals(2, resultByBorrower.totalItems)
+        assertTrue(resultByBorrower.page.all { it.lendingAgreement.borrower.id == borrowerUser.id })
+
+        // Test filter by status
+        val resultByStatus = feeService.findFees(
+            pageable = pageable,
+            status = FeeStatusEnum.PAID
+        )
+
+        assertEquals(1, resultByStatus.totalItems)
+        assertEquals(FeeStatusEnum.PAID, resultByStatus.page[0].status)
+
+        // Test filter by fee amount range
+        val resultByAmount = feeService.findFees(
+            pageable = pageable,
+            feeAmountMin = 200,
+            feeAmountMax = 600
+        )
+
+        assertEquals(1, resultByAmount.totalItems)
+        assertEquals(500, resultByAmount.page[0].feeAmount)
+    }
+
+    @Test
+    fun `should not find any offending agreements when all are returned on time`() {
+        val lendingAgreementEntity = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(8),
+                expectedReturnTime = ZonedDateTime.now().minusDays(1)
+            )
+        )
+
+        lendingAgreementService.patch(
+            PatchLendingAgreementDto(id = lendingAgreementEntity.id, returnTime = ZonedDateTime.now().minusDays(3))
+        )
+
+        val offendingAgreements = feeService.findOffendingLendingAgreements()
+
+        assertEquals(0, offendingAgreements.size)
+    }
+
+    @Test
+    fun `should find offending agreements when contracts are overdue`() {
+        val lendingAgreementEntity = lendingAgreementService.create(
+            CreateLendingAgreementDto(
+                toolId = testTool.id,
+                borrowerId = borrowerUser.id,
+                lendingStartTime = ZonedDateTime.now().minusDays(8),
+                expectedReturnTime = ZonedDateTime.now().minusDays(7)
+            )
+        )
+
+        val offendingAgreements = feeService.findOffendingLendingAgreements()
+
+        assertEquals(1, offendingAgreements.size)
+        assertEquals(lendingAgreementEntity.id, offendingAgreements[0].id)
+    }
+
+    @Test
+    fun `should find all fees without filters`() {
+        // Create multiple fees
+        feeService.createFee(CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "Fee 1",
+            feeAmount = 100
+        ))
+
+        feeService.createFee(CreateFeeDto(
+            lendingAgreementId = testLendingAgreement.id,
+            reason = "Fee 2",
+            feeAmount = 200
+        ))
+
+        val pageable = PageRequest.of(0, 10)
+        val result = feeService.findFees(pageable)
+
+        assertEquals(2, result.totalItems)
+    }
+}
+````
+
+These tests cover:
+
+**TaxCollectorTest:**
+- Verifies that no fees are created when no broken contracts exist
+- Tests fee creation for overdue contracts without existing fees
+- Ensures no additional fees are created for contracts with recent tax collector fees
+- Tests fee creation for contracts with old tax collector fees (>7 days)
+- Verifies that only fees created by the tax collector are considered for timing checks
+
+**Expanded FeeServiceTest:**
+- Tests the `createFee` function with and without override user
+- Tests `findById` function
+- Tests `findFeesByLendingAgreementId` function
+- Tests `findFees` with various filters (lending agreement ID, borrower ID, status, fee amount range)
+- Tests `findOffendingLendingAgreements` function
+- Tests finding all fees without filters
+
+Both test classes follow the existing patterns in your project with proper setup, authentication context, and comprehensive coverage of both reading and writing operations.
+
+---
+
+_**User**_
+
+Do you see any bugs in checkForBrokenContracts()? I believe it filters wrong
+
+---
+
+_**Assistant**_
+
+Yes, I see a critical bug in the filtering logic! The issue is on line 33-35:
+
+```kotlin
+feeService.findFeesByLendingAgreementId(agreement.id).filter {
+    fee -> fee.createdBy == taxCollectorUser
+}.sortedBy { fee -> fee.id }[0].createdTime <= ZonedDateTime.now().minusDays(7)
+```
+
+**The problems:**
+
+1. **IndexOutOfBoundsException**: If the filter returns an empty list (no fees created by tax collector), accessing `[0]` will throw an exception.
+
+2. **Wrong logic**: The condition should check if the most **recent** fee is older than 7 days, but you're sorting by ID and taking the first element, which gives you the **oldest** fee by ID (not necessarily by time).
+
+3. **Inverted condition**: You want to create a fee when there's NO recent fee, but the current logic creates a fee when the oldest fee is old.
+
+Here's the corrected version:
+
+````kotlin
+@Scheduled(cron = "0 0 */1 * * *") // At 0 minutes past the hour, every hour
+fun checkForBrokenContracts() {
+    val taxCollectorUser = userService.findById(2).orElseThrow { throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "The tax collector user could not be found") }
+
+    logger.info("Checking for broken contracts... ")
+
+    val brokenContracts = feeService.findOffendingLendingAgreements().filter { agreement ->
+        val taxCollectorFees = feeService.findFeesByLendingAgreementId(agreement.id)
+            .filter { fee -> fee.createdBy == taxCollectorUser }
+        
+        // Create fee if: no tax collector fees exist OR the most recent tax collector fee is older than 7 days
+        taxCollectorFees.isEmpty() || 
+        taxCollectorFees.maxByOrNull { fee -> fee.createdTime }!!.createdTime <= ZonedDateTime.now().minusDays(7)
+    }
+
+    logger.info("Found ${brokenContracts.size} broken contracts.")
+
+    brokenContracts.forEach { contract ->
+        feeService.createFee(
+            CreateFeeDto(contract.id, DEFAULT_LATE_FEE_REASON, DEFAULT_LATE_FEE_AMOUNT_NOK),
+            taxCollectorUser
+        )
+    }
+
+    logger.info("Created late fees for ${brokenContracts.size} broken contracts.")
+}
+````
+
+**Key fixes:**
+
+1. **Separate the filtering**: First get all tax collector fees, then check conditions
+2. **Use `maxByOrNull`**: Gets the most recent fee by creation time (not ID)
+3. **Safe access**: The `!!` is safe here because we know the list is not empty due to the `isEmpty()` check
+4. **Correct logic**: Create fee when no tax collector fees exist OR when the most recent one is older than 7 days
+
+This ensures fees are created appropriately without throwing exceptions and with the correct timing logic.
+
+---
+
+_**User**_
+
+@workspace there are a few tests that don't work.
+
+In FeeServiceTest:
+
+`should find offending agreements when contracts are overdue`
+
+org.opentest4j.AssertionFailedError: 
+Expected :1
+Actual   :0
+
+assertEquals(1, offendingAgreements.size)
+
+In TaxCollectorTest:
+
+`should create fees for contracts with old tax collector fees`
+
+org.opentest4j.AssertionFailedError: 
+Expected :2
+Actual   :1
+
+assertEquals(feesBefore + 1, feesAfter)
+
+`should create fees for overdue contracts without existing fees`
+
+org.opentest4j.AssertionFailedError: 
+Expected :1
+Actual   :0
+
+assertEquals(feesBefore + 1, feesAfter)
+
+`should only consider fees created by tax collector for timing check`
+
+org.opentest4j.AssertionFailedError: 
+Expected :2
+Actual   :1
+
+assertEquals(feesBefore + 1, feesAfter)
+
+
+It it may be that the tests in TaxCol fail because of feeService.findOffendingLendingAgreements() not working correctly.
+
+---
+
+_**Assistant**_
+
+You're absolutely right! The issue is that `feeService.findOffendingLendingAgreements()` is not finding overdue contracts correctly. Looking at the failing tests, it seems like the method isn't properly identifying lending agreements that are past their expected return time.
+
+Let me check what the current implementation of `findOffendingLendingAgreements()` looks like. Based on the test failures, it appears the repository method `findOffendingLendingAgreements()` might not be working as expected.
+
+The tests are creating overdue lending agreements but the method is returning an empty list. Here's how to fix this:
+
+## Fix the Repository Method
+
+First, let's check and fix the repository implementation:
+
+````kotlin
+@Repository
+interface LendingAgreementRepository : JpaRepository<LendingAgreementEntity, Int> {
+    // ...existing code...
+
+    @Query("""
+        SELECT la FROM LendingAgreementEntity la 
+        WHERE la.expectedReturnTime < :currentTime 
+        AND la.returnTime IS NULL
+    """)
+    fun findOffendingLendingAgreements(@Param("currentTime") currentTime: ZonedDateTime = ZonedDateTime.now()): List<LendingAgreementEntity>
+    
+    // Alternative if the above doesn't work:
+    @Query("""
+        SELECT la FROM LendingAgreementEntity la 
+        WHERE la.expectedReturnTime < CURRENT_TIMESTAMP 
+        AND la.returnTime IS NULL
+    """)
+    fun findOffendingLendingAgreements(): List<LendingAgreementEntity>
+}
+````
+
+## Update the Service Method
+
+Make sure the service method calls the repository correctly:
+
+````kotlin
+// ...existing code...
+fun findOffendingLendingAgreements(): List<LendingAgreementEntity> {
+    return lendingAgreementRepository.findOffendingLendingAgreements()
+}
+// ...existing code...
+````
+
+## Fix the Tests
+
+The tests might also need to ensure the lending agreements have proper `expectedReturnTime` values. Let's update the failing tests:
+
+````kotlin
+// ...existing code...
+@Test
+fun `should find offending agreements when contracts are overdue`() {
+    val lendingAgreementEntity = lendingAgreementService.create(
+        CreateLendingAgreementDto(
+            toolId = testTool.id,
+            borrowerId = borrowerUser.id,
+            lendingStartTime = ZonedDateTime.now().minusDays(8),
+            expectedReturnTime = ZonedDateTime.now().minusDays(7) // This should be in the past
+        )
+    )
+
+    //
+
+---
+

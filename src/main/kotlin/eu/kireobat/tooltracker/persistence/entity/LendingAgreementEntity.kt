@@ -19,9 +19,9 @@ data class LendingAgreementEntity (
     @JoinColumn(name="borrower_id")
     var borrower: UserEntity,
     @Column(name="lending_start_time")
-    var lendingStartTime: ZonedDateTime = ZonedDateTime.now(),
+    var lendingStartTime: ZonedDateTime,
     @Column(name="expected_return_time")
-    var expectedReturnTime: ZonedDateTime = ZonedDateTime.now().plusDays(7), // temporary
+    var expectedReturnTime: ZonedDateTime,
     @Column(name="return_time")
     var returnTime: ZonedDateTime? = null,
     @ManyToOne

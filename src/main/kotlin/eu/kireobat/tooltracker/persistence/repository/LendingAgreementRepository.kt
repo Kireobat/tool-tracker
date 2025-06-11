@@ -26,6 +26,6 @@ interface LendingAgreementRepository: JpaRepository<LendingAgreementEntity, Int>
         @Param("lentBefore") lentBefore: ZonedDateTime?
     ): Page<LendingAgreementEntity>
 
-    @Query("select la from LendingAgreementEntity la where la.expectedReturnTime >= current_date and la.returnTime is null")
-    fun findOffendingLendingAgreements(): List<LendingAgreementEntity>
+    @Query("select la from LendingAgreementEntity la where la.expectedReturnTime < :currentTime and la.returnTime is null")
+    fun findOffendingLendingAgreements(@Param("currentTime") currentTime: ZonedDateTime = ZonedDateTime.now()): List<LendingAgreementEntity>
 }

@@ -28,6 +28,8 @@ class LendingAgreementService(
             LendingAgreementEntity(
                 borrower = userService.findById(createLendingAgreementDto.borrowerId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find user with id (${createLendingAgreementDto.borrowerId})") },
                 tool = toolService.findById(createLendingAgreementDto.toolId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool with id (${createLendingAgreementDto.toolId})") },
+                lendingStartTime = createLendingAgreementDto.lendingStartTime ?: ZonedDateTime.now(),
+                expectedReturnTime = createLendingAgreementDto.expectedReturnTime ?: ZonedDateTime.now().plusDays(7),
                 createdBy = userEntity
             )
         )

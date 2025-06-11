@@ -5,6 +5,6 @@ import java.time.ZonedDateTime
 data class CreateLendingAgreementDto(
     val toolId: Int,
     val borrowerId: Int,
-    val lendingStartTime: ZonedDateTime?,
-    val expectedReturnTime: ZonedDateTime?
+    val lendingStartTime: ZonedDateTime? = null,
+    val expectedReturnTime: ZonedDateTime? = null,
 )

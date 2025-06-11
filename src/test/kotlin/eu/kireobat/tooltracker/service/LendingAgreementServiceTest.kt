@@ -109,7 +109,9 @@ class LendingAgreementServiceTest : TestContainerConfiguration() {
         val agreement = lendingAgreementRepository.save(LendingAgreementEntity(
             borrower = borrowerUser,
             tool = testTool,
-            createdBy = testUser
+            createdBy = testUser,
+            lendingStartTime = ZonedDateTime.now(),
+            expectedReturnTime = ZonedDateTime.now().plusDays(7)
         ))
 
         val result = lendingAgreementService.findById(agreement.id)
@@ -125,7 +127,9 @@ class LendingAgreementServiceTest : TestContainerConfiguration() {
         val agreement1 = lendingAgreementRepository.save(LendingAgreementEntity(
             borrower = borrowerUser,
             tool = testTool,
-            createdBy = testUser
+            createdBy = testUser,
+            lendingStartTime = ZonedDateTime.now(),
+            expectedReturnTime = ZonedDateTime.now().plusDays(7)
         ))
 
         // Create another tool and agreement
@@ -145,7 +149,9 @@ class LendingAgreementServiceTest : TestContainerConfiguration() {
         val agreement2 = lendingAgreementRepository.save(LendingAgreementEntity(
             borrower = borrowerUser,
             tool = tool2,
-            createdBy = testUser
+            createdBy = testUser,
+            lendingStartTime = ZonedDateTime.now(),
+            expectedReturnTime = ZonedDateTime.now().plusDays(7)
         ))
 
         val pageable = PageRequest.of(0, 10)
