@@ -1,10 +1,9 @@
 package eu.kireobat.tooltracker.api.controller
 
-import eu.kireobat.tooltracker.api.dto.inbound.CreateToolServiceEventDto
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
-import eu.kireobat.tooltracker.persistence.entity.ToolEntity
-import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
+import eu.kireobat.tooltracker.persistence.entity.toToolDto
 import eu.kireobat.tooltracker.service.ToolService
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -16,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -30,13 +28,7 @@ class ToolController(
 ) {
     @PostMapping("/tools/register")
     @PreAuthorize("hasRole('USER')")
-    fun registerTool(@RequestBody registerToolDto: RegisterToolDto): ResponseEntity<ToolEntity> {
-        return ResponseEntity.ok(toolService.registerTool(registerToolDto))
-    }
-
-    @PostMapping("/tools/type/create")
-    @PreAuthorize("hasRole('USER')")
-    fun createToolType(@RequestParam name: String): ResponseEntity<ToolTypeEntity> {
-        return ResponseEntity.ok(toolService.createToolType(name))
+    fun registerTool(@RequestBody registerToolDto: RegisterToolDto): ResponseEntity<ToolDto> {
+        return ResponseEntity.ok(toolService.registerTool(registerToolDto).toToolDto())
     }
 }

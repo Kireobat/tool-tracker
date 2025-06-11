@@ -16,7 +16,7 @@ class LendingAgreementService(
     private val userService: UserService,
 ) {
 
-    fun create(createLendingAgreementDto: CreateLendingAgreementDto): LendingAgreementDto {
+    fun create(createLendingAgreementDto: CreateLendingAgreementDto): LendingAgreementEntity {
 
         val userEntity = userService.findByAuthentication()
 
@@ -26,7 +26,7 @@ class LendingAgreementService(
                 tool = toolService.findToolById(createLendingAgreementDto.toolId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool with id (${createLendingAgreementDto.toolId})") },
                 createdBy = userEntity
             )
-        ).toLendingAgreementDto()
+        )
     }
 
     fun findById(id: Int) = lendingAgreementRepository.findById(id)

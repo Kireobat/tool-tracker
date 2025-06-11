@@ -8,6 +8,7 @@ import eu.kireobat.tooltracker.api.dto.outbound.LendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
 import eu.kireobat.tooltracker.persistence.entity.ToolEntity
 import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
+import eu.kireobat.tooltracker.persistence.entity.toLendingAgreementDto
 import eu.kireobat.tooltracker.service.DamageReportService
 import eu.kireobat.tooltracker.service.LendingAgreementService
 import eu.kireobat.tooltracker.service.ToolService
@@ -38,6 +39,6 @@ class LendingAgreementController(
     @PostMapping("/agreements/create")
     @PreAuthorize("hasRole('USER')")
     fun createAgreement(@RequestBody createLendingAgreementDto: CreateLendingAgreementDto): ResponseEntity<LendingAgreementDto> {
-        return ResponseEntity.ok(lendingAgreementService.create(createLendingAgreementDto))
+        return ResponseEntity.ok(lendingAgreementService.create(createLendingAgreementDto).toLendingAgreementDto())
     }
 }

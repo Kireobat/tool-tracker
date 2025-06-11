@@ -18,7 +18,7 @@ class DamageReportService(
     private val userService: UserService
 ) {
 
-    fun create(createDamageReportDto: CreateDamageReportDto): DamageReportDto {
+    fun create(createDamageReportDto: CreateDamageReportDto): DamageReportEntity {
 
         val userEntity = userService.findByAuthentication()
 
@@ -35,7 +35,7 @@ class DamageReportService(
             description = createDamageReportDto.description,
             createdBy = userEntity
 
-        )).toDamageReportDto()
+        ))
     }
 
     fun findById(id: Int): Optional<DamageReportEntity> {

@@ -6,6 +6,7 @@ import eu.kireobat.tooltracker.api.dto.outbound.DamageReportDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
 import eu.kireobat.tooltracker.persistence.entity.ToolEntity
 import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
+import eu.kireobat.tooltracker.persistence.entity.toDamageReportDto
 import eu.kireobat.tooltracker.service.DamageReportService
 import eu.kireobat.tooltracker.service.ToolService
 import io.swagger.v3.oas.annotations.media.Content
@@ -35,6 +36,6 @@ class DamageReportController(
     @PostMapping("/reports/create")
     @PreAuthorize("hasRole('USER')")
     fun createReport(@RequestBody createDamageReportDto: CreateDamageReportDto): ResponseEntity<DamageReportDto> {
-        return ResponseEntity.ok(damageReportService.create(createDamageReportDto))
+        return ResponseEntity.ok(damageReportService.create(createDamageReportDto).toDamageReportDto())
     }
 }
