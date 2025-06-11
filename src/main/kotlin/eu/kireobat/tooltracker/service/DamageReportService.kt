@@ -1,9 +1,7 @@
 package eu.kireobat.tooltracker.service
 
 import eu.kireobat.tooltracker.api.dto.inbound.CreateDamageReportDto
-import eu.kireobat.tooltracker.api.dto.outbound.DamageReportDto
 import eu.kireobat.tooltracker.persistence.entity.DamageReportEntity
-import eu.kireobat.tooltracker.persistence.entity.toDamageReportDto
 import eu.kireobat.tooltracker.persistence.repository.DamageReportRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -31,7 +29,7 @@ class DamageReportService(
 
         return damageReportRepository.saveAndFlush(DamageReportEntity(
             lendingAgreement = if (createDamageReportDto.lendingAgreementId != null) {lendingAgreementService.findById(createDamageReportDto.lendingAgreementId).get()} else {null},
-            tool = if (createDamageReportDto.toolId != null) {toolService.findToolById(createDamageReportDto.toolId).get()} else {null},
+            tool = if (createDamageReportDto.toolId != null) {toolService.findById(createDamageReportDto.toolId).get()} else {null},
             description = createDamageReportDto.description,
             createdBy = userEntity
 

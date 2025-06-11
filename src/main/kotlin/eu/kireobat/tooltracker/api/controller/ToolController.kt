@@ -2,20 +2,26 @@ package eu.kireobat.tooltracker.api.controller
 
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
+import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_PAGE_SIZE_INT
+import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_SORT_NO_DIRECTION
+import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
 import eu.kireobat.tooltracker.persistence.entity.toToolDto
 import eu.kireobat.tooltracker.service.ToolService
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springdoc.core.annotations.ParameterObject
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 
 @RestController
 @RequestMapping("api/v1")
@@ -30,5 +36,24 @@ class ToolController(
     @PreAuthorize("hasRole('USER')")
     fun registerTool(@RequestBody registerToolDto: RegisterToolDto): ResponseEntity<ToolDto> {
         return ResponseEntity.ok(toolService.registerTool(registerToolDto).toToolDto())
+    }
+
+    @GetMapping("/tools/{id}")
+    fun getTool(
+        @PathVariable id: Int
+    ): ResponseEntity<ToolDto> {
+        return ResponseEntity.ok(toolService.findById(id).orElseThrow { throw ResponseStatusException(
+            HttpStatus.NOT_FOUND, "Could not find service event with id ($id)") }.toToolDto())
+    }
+
+    @GetMapping("/tools")
+    fun getTools(
+        @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @RequestParam name: String?,
+        @RequestParam serial: String?,
+        @RequestParam toolTypeId: Int?,
+        @RequestParam status: ToolStatusEnum?
+    ): ResponseEntity<ToolTrackerPageDto<ToolDto>> {
+        return ResponseEntity.ok(toolService.findTools(pageable, name, serial, toolTypeId, status))
     }
 }

@@ -16,9 +16,11 @@ import org.springdoc.core.annotations.ParameterObject
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import java.time.ZonedDateTime
 
 @RestController
@@ -34,10 +36,11 @@ class ToolServiceEventController(private val toolServiceEventService: ToolServic
         return ResponseEntity.ok(toolServiceEventService.create(createToolServiceEventDto).toToolServiceEventDto())
     }
 
-    //@GetMapping("/tools/service/{id}")
-    //fun getServiceEventsById(@PathVariable id: Int): ResponseEntity<ToolServiceEventDto> {
-
-    //}
+    @GetMapping("/tools/service/{id}")
+    fun getServiceEventsById(@PathVariable id: Int): ResponseEntity<ToolServiceEventDto> {
+        return ResponseEntity.ok(toolServiceEventService.findById(id).orElseThrow { throw ResponseStatusException(
+            HttpStatus.NOT_FOUND, "Could not find service event with id ($id)") }.toToolServiceEventDto())
+    }
 
     @GetMapping("/tools/service")
     fun getServiceEvents(

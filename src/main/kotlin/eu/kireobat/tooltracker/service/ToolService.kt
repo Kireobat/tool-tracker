@@ -1,13 +1,12 @@
 package eu.kireobat.tooltracker.service
 
-import eu.kireobat.tooltracker.api.dto.inbound.CreateToolServiceEventDto
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
-import eu.kireobat.tooltracker.persistence.entity.ToolEntity
-import eu.kireobat.tooltracker.persistence.entity.ToolServiceEventEntity
-import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
+import eu.kireobat.tooltracker.api.dto.outbound.ToolDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
+import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
+import eu.kireobat.tooltracker.persistence.entity.*
 import eu.kireobat.tooltracker.persistence.repository.ToolRepository
-import eu.kireobat.tooltracker.persistence.repository.ToolServiceRepository
-import eu.kireobat.tooltracker.persistence.repository.ToolTypeRepository
+import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
@@ -31,7 +30,26 @@ class ToolService(
         ))
     }
 
-    fun findToolById(toolId: Int): Optional<ToolEntity> {
+    fun findById(toolId: Int): Optional<ToolEntity> {
         return toolRepository.findById(toolId)
+    }
+
+    fun findTools(pageable: Pageable, name: String?, serial: String?, toolTypeId: Int?, status: ToolStatusEnum?): ToolTrackerPageDto<ToolDto> {
+
+        val page = toolRepository.findAllWithFilter(
+            pageable,
+            name,
+            serial,
+            toolTypeId,
+            status
+        )
+
+        return ToolTrackerPageDto(
+            page.content.map {entity -> entity.toToolDto()},
+            page.totalElements,
+            pageable.pageNumber,
+            pageable.pageSize
+        )
+
     }
 }

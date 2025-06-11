@@ -47,8 +47,8 @@ class ToolServiceEventService(
             toolId,
             damageReportId,
             lendingAgreementId,
-            searchPeriodStart ?: ZonedDateTime.now().minusYears(100), // dette må kunne gjøres på en bedre måte
-            searchPeriodStop ?: ZonedDateTime.now().plusYears(100)
+            searchPeriodStart,
+            searchPeriodStop
         )
 
         return ToolTrackerPageDto(
