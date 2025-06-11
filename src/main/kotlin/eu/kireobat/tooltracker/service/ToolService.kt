@@ -1,7 +1,9 @@
 package eu.kireobat.tooltracker.service
 
+import eu.kireobat.tooltracker.api.dto.inbound.CreateToolServiceEventDto
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterToolDto
 import eu.kireobat.tooltracker.persistence.entity.ToolEntity
+import eu.kireobat.tooltracker.persistence.entity.ToolServiceEventEntity
 import eu.kireobat.tooltracker.persistence.entity.ToolTypeEntity
 import eu.kireobat.tooltracker.persistence.repository.ToolRepository
 import eu.kireobat.tooltracker.persistence.repository.ToolServiceRepository
@@ -15,8 +17,7 @@ import java.util.*
 class ToolService(
     private val toolRepository: ToolRepository,
     private val toolTypeRepository: ToolTypeRepository,
-    private val toolServiceRepository: ToolServiceRepository,
-    private val userService: UserService
+    private val userService: UserService,
 ) {
 
     fun registerTool(registerToolDto: RegisterToolDto): ToolEntity {

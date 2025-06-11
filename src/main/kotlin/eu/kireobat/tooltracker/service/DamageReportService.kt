@@ -8,6 +8,7 @@ import eu.kireobat.tooltracker.persistence.repository.DamageReportRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.util.*
 
 @Service
 class DamageReportService(
@@ -35,5 +36,9 @@ class DamageReportService(
             createdBy = userEntity
 
         )).toDamageReportDto()
+    }
+
+    fun findById(id: Int): Optional<DamageReportEntity> {
+        return damageReportRepository.findById(id)
     }
 }
