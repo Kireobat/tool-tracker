@@ -1,0 +1,2 @@
+INSERT INTO tool_tracker.users (id, name, created_time, created_by) VALUES (2, 'TAX_COLLECTOR', current_date, 0) ON CONFLICT (id) DO NOTHING;
+INSERT INTO tool_tracker.roles (id, name, description, created_time, created_by) VALUES (2, 'ROLE_TAX_COLLECTOR','the tax collector from terraria', current_date, 0) ON CONFLICT (id) DO NOTHING;

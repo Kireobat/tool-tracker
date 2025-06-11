@@ -1,6 +1,7 @@
 package eu.kireobat.tooltracker.service
 
 import eu.kireobat.tooltracker.api.dto.inbound.CreateLendingAgreementDto
+import eu.kireobat.tooltracker.api.dto.inbound.PatchLendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.LendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.persistence.entity.LendingAgreementEntity
@@ -50,5 +51,32 @@ class LendingAgreementService(
             pageable.pageNumber,
             pageable.pageSize
         )
+    }
+
+    fun patch(patchLendingAgreementDto: PatchLendingAgreementDto): LendingAgreementEntity {
+        val user = userService.findByAuthentication()
+
+        val lendingAgreementEntity = lendingAgreementRepository.findById(patchLendingAgreementDto.id).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find agreement with id ${patchLendingAgreementDto.id}") }
+
+        if (patchLendingAgreementDto.toolId != null) {
+            lendingAgreementEntity.tool = toolService.findById(patchLendingAgreementDto.toolId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool with id ${patchLendingAgreementDto.toolId}") }
+        }
+        if (patchLendingAgreementDto.borrowerId != null) {
+            lendingAgreementEntity.borrower = userService.findById(patchLendingAgreementDto.borrowerId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find user with id ${patchLendingAgreementDto.borrowerId}") }
+        }
+        if (patchLendingAgreementDto.lendingStartTime != null) {
+            lendingAgreementEntity.lendingStartTime = patchLendingAgreementDto.lendingStartTime
+        }
+        if (patchLendingAgreementDto.expectedReturnTime != null) {
+            lendingAgreementEntity.expectedReturnTime = patchLendingAgreementDto.expectedReturnTime
+        }
+        if (patchLendingAgreementDto.returnTime != null) {
+            lendingAgreementEntity.returnTime = patchLendingAgreementDto.returnTime
+        }
+
+        lendingAgreementEntity.modifiedBy = user
+        lendingAgreementEntity.modifiedTime = ZonedDateTime.now()
+
+        return lendingAgreementRepository.saveAndFlush(lendingAgreementEntity)
     }
 }
