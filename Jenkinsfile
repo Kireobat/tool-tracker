@@ -64,7 +64,7 @@ pipeline {
 
                         def findContainerByName = { token, name ->
                             def response = httpRequest(
-                                url: "https://docker.kireobat.eu/api/endpoints/2/docker/containers/json",
+                                url: "https://docker.kireobat.eu/api/endpoints/2/docker/containers/json?all=true",
                                 httpMode: 'GET',
                                 contentType: 'APPLICATION_JSON',
                                 customHeaders: [[name: 'Authorization', value: "Bearer ${token}"]]
