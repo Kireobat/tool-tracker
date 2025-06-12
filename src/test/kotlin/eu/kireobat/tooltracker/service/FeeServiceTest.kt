@@ -215,7 +215,7 @@ class FeeServiceTest: TestContainerConfiguration() {
         )
 
         assertEquals(2, resultByBorrower.totalItems)
-        assertTrue(resultByBorrower.page.all { it.lendingAgreement.borrower.id == borrowerUser.id })
+        assertTrue(resultByBorrower.page.all { it.lendingAgreement.borrowerId == borrowerUser.id })
 
         // Test filter by status
         val resultByStatus = feeService.findFees(

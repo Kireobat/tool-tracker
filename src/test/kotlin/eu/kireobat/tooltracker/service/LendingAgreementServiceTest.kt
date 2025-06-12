@@ -178,6 +178,6 @@ class LendingAgreementServiceTest : TestContainerConfiguration() {
         )
 
         assertEquals(2, resultByBorrower.totalItems)
-        assertTrue(resultByBorrower.page.all { it.borrower.id == borrowerUser.id })
+        assertTrue(resultByBorrower.page.all { it.borrowerId == borrowerUser.id })
     }
 }
