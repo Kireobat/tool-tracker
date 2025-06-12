@@ -191,6 +191,15 @@
                 <flyway.locations>filesystem:src/main/resources/db/migration</flyway.locations>
             </properties>
         </profile>
+        <profile>
+            <id>prod</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <activatedProperties>prod</activatedProperties>
+                <flyway.locations>filesystem:src/main/resources/db/migration</flyway.locations>
+            </properties>
+        </profile>
     </profiles>
-
 </project>
