@@ -48,3 +48,57 @@ The Docker CLI automatically pulls images when they're not available locally (wi
 
 ---
 
+_**User**_
+
+Why doesn't my jenkins file work? I am getting this issue:
+
+groovy.lang.MissingPropertyException: No such property: token for class: groovy.lang.Binding
+
+---
+
+_**Assistant**_
+
+The issue is in your `createImage` closure - you're referencing `token` but it's not passed as a parameter. The `token` variable is defined later in the main execution logic, but the closure is trying to access it from its lexical scope.
+
+Here's the fix:
+
+````groovy
+// ...existing code...
+def createImage = {imageName, token -> 
+    def response = httpRequest(
+        url: "https://docker.kireobat.eu/api/endpoints/2/docker/images/create?fromImage=${imageName}&tag=latest",
+        httpMode: 'POST',
+        contentType: 'APPLICATION_JSON',
+        customHeaders: [[name: 'Authorization', value
+
+---
+
+_**User**_
+
+bruh
+
+---
+
+_**Assistant**_
+
+I see the issue! Your `createImage` closure is trying to use `token` but it's not passed as a parameter. You need to add `token` as a parameter to the closure.
+
+Here's the fix:
+
+````groovy
+// ...existing code...
+def createImage = {imageName, token -> 
+    def response = httpRequest(
+        url: "https://docker.kireobat.eu/api/endpoints/2/docker/images/create?fromImage=${imageName}&tag=latest",
+        httpMode: 'POST',
+        contentType: 'APPLICATION_JSON',
+        customHeaders: [[name: 'Authorization', value: "Bearer ${token}"]]
+    )
+    return response.status == 200 || response.status == 201
+}
+// ...existing code...
+// Ensure the Docker image is available
+if (!create
+
+---
+

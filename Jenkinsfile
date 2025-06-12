@@ -96,7 +96,7 @@ pipeline {
                             )
                         }
 
-                        def createImage = {imageName -> 
+                        def createImage = {imageName, token -> 
                             def response = httpRequest(
                                 url: "https://docker.kireobat.eu/api/endpoints/2/docker/images/create?fromImage=${imageName}&tag=latest",
                                 httpMode: 'POST',
@@ -155,7 +155,7 @@ pipeline {
                         }
 
                         // Ensure the Docker image is available
-                        if (!createImage(imageName)) {
+                        if (!createImage(imageName, token)) {
                             error "Failed to pull Docker image: ${imageName}"
                         }
 
