@@ -9,6 +9,8 @@ import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_SORT_NO_DIRECT
 import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
 import eu.kireobat.tooltracker.persistence.entity.toToolDto
 import eu.kireobat.tooltracker.service.ToolService
+import eu.kireobat.tooltracker.service.UserMapRoleService
+import eu.kireobat.tooltracker.service.UserService
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -31,6 +33,8 @@ import org.springframework.web.server.ResponseStatusException
 @Tag(name = "Tool endpoints", description = "Endpoints related to managing tools")
 class ToolController(
     private val toolService: ToolService,
+    private val userService: UserService,
+    private val userMapRoleService: UserMapRoleService,
 ) {
     @PostMapping("/tools/register")
     @PreAuthorize("hasRole('EMPLOYEE')")
@@ -39,16 +43,23 @@ class ToolController(
     }
 
     @GetMapping("/tools/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getTool(
         @PathVariable id: Int
     ): ResponseEntity<ToolDto> {
-        return ResponseEntity.ok(toolService.findById(id).orElseThrow { throw ResponseStatusException(
-            HttpStatus.NOT_FOUND, "Could not find tool with id ($id)") }.toToolDto())
+
+        val toolEntity = toolService.findById(id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool with id $id") }
+
+        val toolIsNotAvailableAndNoAuth = toolEntity.status != ToolStatusEnum.AVAILABLE && !userService.hasAuthentication()
+        val toolIsNotAvailableAndNoPermission = toolEntity.status != ToolStatusEnum.AVAILABLE && userService.hasAuthentication() && !userMapRoleService.isEmployee(userService.findByAuthentication().id)
+
+        if (toolIsNotAvailableAndNoAuth || toolIsNotAvailableAndNoPermission) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied")
+        }
+
+        return ResponseEntity.ok(toolEntity.toToolDto())
     }
 
     @GetMapping("/tools")
-    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getTools(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam name: String?,
@@ -56,6 +67,13 @@ class ToolController(
         @RequestParam toolTypeId: Int?,
         @RequestParam status: ToolStatusEnum?
     ): ResponseEntity<ToolTrackerPageDto<ToolDto>> {
-        return ResponseEntity.ok(toolService.findTools(pageable, name, serial, toolTypeId, status))
+
+        val statusToUse = if (userService.hasAuthentication() && userMapRoleService.isEmployee(userService.findByAuthentication().id)) {
+            status
+        } else {
+            ToolStatusEnum.AVAILABLE
+        }
+
+        return ResponseEntity.ok(toolService.findTools(pageable, name, serial, toolTypeId, statusToUse))
     }
 }

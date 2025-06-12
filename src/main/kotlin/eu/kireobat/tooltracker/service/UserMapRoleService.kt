@@ -20,6 +20,15 @@ class UserMapRoleService(
         return userMapRoleRepository.findByUserId(userId).map {e -> SimpleGrantedAuthority(e.role.name) }
     }
 
+    fun hasRoles(userId: Int, roles: List<SimpleGrantedAuthority>): Boolean {
+        val usersRoles = getRoles(userId)
+        return usersRoles.any { role -> roles.contains(role) }
+    }
+
+    fun isEmployee(userId: Int): Boolean {
+        return hasRoles(userId, listOf(SimpleGrantedAuthority(roleService.getRoleById(3).getOrElse { throw ResponseStatusException(HttpStatus.NOT_FOUND,"Could not find employee role") }.name)))
+    }
+
     fun create(usersMapRolesDto: PatchUserMapRoleDto): UserMapRoleEntity {
 
         val userEntity = userService.findByAuthentication()

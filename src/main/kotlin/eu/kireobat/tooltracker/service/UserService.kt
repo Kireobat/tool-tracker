@@ -75,4 +75,13 @@ class UserService(
             else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to parse authentication. (Not local or github)")
         }
     }
+
+    fun hasAuthentication(): Boolean {
+
+        return when (val principal = SecurityContextHolder.getContext().authentication.principal) {
+            // email/pass users must have email
+            is CustomUserDetails -> true
+            else -> false
+        }
+    }
 }

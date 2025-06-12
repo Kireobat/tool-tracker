@@ -27,6 +27,7 @@ class ToolService(
             name = registerToolDto.name,
             serial = registerToolDto.serial,
             type = toolTypeService.findById(registerToolDto.type).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool type with id: ${registerToolDto.type}") },
+            status = registerToolDto.status ?: ToolStatusEnum.AVAILABLE,
             createdBy = userEntity
         ))
     }
