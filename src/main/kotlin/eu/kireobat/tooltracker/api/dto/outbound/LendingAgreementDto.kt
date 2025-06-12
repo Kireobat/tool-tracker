@@ -5,12 +5,12 @@ import java.time.ZonedDateTime
 data class LendingAgreementDto(
     val id: Int,
     val tool: ToolDto,
-    val borrower: UserDto,
+    val borrowerId: Int,
     val lendingStartTime: ZonedDateTime,
     val expectedReturnTime: ZonedDateTime,
     val returnTime: ZonedDateTime?,
-    val createdBy: UserDto,
+    val createdById: Int,
     val createdTime: ZonedDateTime,
-    val modifiedBy: UserDto?,
+    val modifiedById: Int?,
     val modifiedTime: ZonedDateTime?,
 )

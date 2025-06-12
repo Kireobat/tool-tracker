@@ -34,4 +34,4 @@ data class ToolEntity (
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun ToolEntity.toToolDto() = ToolDto(id, name, serial, status, type.toToolTypeDto(), createdTime, createdBy.toUserDto(), modifiedTime, modifiedBy?.toUserDto())
+fun ToolEntity.toToolDto() = ToolDto(id, name, serial, status, type.toToolTypeDto(), createdTime, createdBy.id, modifiedTime, modifiedBy?.id)

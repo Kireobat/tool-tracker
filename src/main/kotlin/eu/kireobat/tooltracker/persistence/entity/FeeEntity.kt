@@ -34,4 +34,4 @@ data class FeeEntity(
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun FeeEntity.toFeeDto() = FeeDto(id,lendingAgreement.toLendingAgreementDto(),reason,feeAmount,status,createdTime,createdBy.toUserDto(),modifiedTime,modifiedBy?.toUserDto())
+fun FeeEntity.toFeeDto() = FeeDto(id,lendingAgreement.toLendingAgreementDto(),reason,feeAmount,status,createdTime,createdBy.id,modifiedTime,modifiedBy?.id)

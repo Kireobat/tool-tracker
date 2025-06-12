@@ -26,4 +26,4 @@ data class ToolTypeEntity (
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun ToolTypeEntity.toToolTypeDto() = ToolTypeDto(id, name, createdTime, createdBy.toUserDto(), modifiedTime, modifiedBy?.toUserDto())
+fun ToolTypeEntity.toToolTypeDto() = ToolTypeDto(id, name, createdTime, createdBy.id, modifiedTime, modifiedBy?.id)

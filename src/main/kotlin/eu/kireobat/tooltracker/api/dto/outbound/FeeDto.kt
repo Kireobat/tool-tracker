@@ -10,7 +10,7 @@ data class FeeDto(
     val feeAmount: Int,
     val status: FeeStatusEnum,
     val createdTime: ZonedDateTime,
-    val createdBy: UserDto,
+    val createdById: Int,
     val modifiedTime: ZonedDateTime?,
-    val modifiedBy: UserDto?,
+    val modifiedById: Int?,
 )

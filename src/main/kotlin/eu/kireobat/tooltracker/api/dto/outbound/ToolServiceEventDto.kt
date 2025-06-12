@@ -8,7 +8,7 @@ data class ToolServiceEventDto(
     val serviceStartTime: ZonedDateTime,
     val serviceStopTime: ZonedDateTime?,
     val createdTime: ZonedDateTime,
-    val createdBy: UserDto,
+    val createdById: Int,
     val modifiedTime: ZonedDateTime?,
-    val modifiedBy: UserDto?,
+    val modifiedById: Int?,
 )

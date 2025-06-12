@@ -36,4 +36,4 @@ data class LendingAgreementEntity (
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun LendingAgreementEntity.toLendingAgreementDto() = LendingAgreementDto(id, tool.toToolDto(), borrower.toUserDto(), lendingStartTime, expectedReturnTime, returnTime, createdBy.toUserDto(), createdTime, modifiedBy?.toUserDto(), modifiedTime)
+fun LendingAgreementEntity.toLendingAgreementDto() = LendingAgreementDto(id, tool.toToolDto(), borrower.id, lendingStartTime, expectedReturnTime, returnTime, createdBy.id, createdTime, modifiedBy?.id, modifiedTime)

@@ -31,4 +31,4 @@ data class ToolServiceEventEntity (
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun ToolServiceEventEntity.toToolServiceEventDto() = ToolServiceEventDto(id, damageReport.toDamageReportDto(),serviceStartTime!!,serviceStopTime,createdTime,createdBy.toUserDto(),modifiedTime,modifiedBy?.toUserDto())
+fun ToolServiceEventEntity.toToolServiceEventDto() = ToolServiceEventDto(id, damageReport.toDamageReportDto(),serviceStartTime!!,serviceStopTime,createdTime,createdBy.id,modifiedTime,modifiedBy?.id)

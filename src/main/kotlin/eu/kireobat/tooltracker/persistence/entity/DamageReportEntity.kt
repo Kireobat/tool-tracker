@@ -32,4 +32,4 @@ data class DamageReportEntity (
     var modifiedTime: ZonedDateTime? = null,
 )
 
-fun DamageReportEntity.toDamageReportDto() = DamageReportDto(id, lendingAgreement?.toLendingAgreementDto(), tool?.toToolDto(), description, createdTime, createdBy.toUserDto(), modifiedTime, modifiedBy?.toUserDto())
+fun DamageReportEntity.toDamageReportDto() = DamageReportDto(id, lendingAgreement?.toLendingAgreementDto(), tool?.toToolDto(), description, createdTime, createdBy.id, modifiedTime, modifiedBy?.id)

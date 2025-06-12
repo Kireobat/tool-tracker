@@ -8,7 +8,7 @@ data class DamageReportDto(
     val tool: ToolDto?,
     val description: String?,
     val createdTime: ZonedDateTime,
-    val createdBy: UserDto,
+    val createdById: Int,
     val modifiedTime: ZonedDateTime?,
-    val modifiedBy: UserDto?,
+    val modifiedById: Int?,
 )

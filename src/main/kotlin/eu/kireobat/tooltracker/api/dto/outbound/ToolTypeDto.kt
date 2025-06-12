@@ -6,7 +6,7 @@ data class ToolTypeDto(
     val id: Int,
     val name: String,
     val createdTime: ZonedDateTime,
-    val createdBy: UserDto,
+    val createdById: Int,
     val modifiedTime: ZonedDateTime?,
-    val modifiedBy: UserDto?,
+    val modifiedById: Int?,
 )
