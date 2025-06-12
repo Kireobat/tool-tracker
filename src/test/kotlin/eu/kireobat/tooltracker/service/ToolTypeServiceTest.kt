@@ -54,10 +54,10 @@ class ToolTypeServiceTest : TestContainerConfiguration() {
         TestDataLoaderUtil().syncSequences(dataSource)
 
         // Create test role
-        val defaultRole = roleRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected default role") }
+        val defaultRole = roleRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected default role") }
 
         // Create test user
-        testUser = userRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test user") }
+        testUser = userRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected test user") }
 
         // Set authentication context
         val customUserDetails = CustomUserDetails(testUser, listOf(SimpleGrantedAuthority(defaultRole.name)))

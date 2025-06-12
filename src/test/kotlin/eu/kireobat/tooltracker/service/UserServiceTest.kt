@@ -52,7 +52,7 @@ class UserServiceTest : TestContainerConfiguration() {
         TestDataLoaderUtil().insertUsersMapRoles(dataSource)
         TestDataLoaderUtil().syncSequences(dataSource)
 
-        defaultRole = roleRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected default role") }
+        defaultRole = roleRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected default role") }
     }
 
     @Test

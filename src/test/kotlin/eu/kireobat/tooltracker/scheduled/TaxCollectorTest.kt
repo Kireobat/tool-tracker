@@ -75,13 +75,13 @@ class TaxCollectorTest : TestContainerConfiguration() {
         TestDataLoaderUtil().insertTools(dataSource)
         TestDataLoaderUtil().syncSequences(dataSource)
 
-        val taxCollectorRole = roleRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected taxCollector role") }
+        val taxCollectorRole = roleRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected taxCollector role") }
 
-        testUser = userRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test user") }
-        borrowerUser = userRepository.findById(3).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected borrower user") }
-        taxCollectorUser = userRepository.findById(4).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected tax collector user") }
+        testUser = userRepository.findById(2).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected test user") }
+        borrowerUser = userRepository.findById(3).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected borrower user") }
+        taxCollectorUser = userRepository.findById(4).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected tax collector user") }
 
-        testTool = toolRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find expected test tool") }
+        testTool = toolRepository.findById(1).orElseThrow { ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find expected test tool") }
 
         // run as tax collector
         val customUserDetails = CustomUserDetails(taxCollectorUser, listOf(SimpleGrantedAuthority(taxCollectorRole.name)))

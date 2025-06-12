@@ -1,6 +1,7 @@
 package eu.kireobat.tooltracker.service
 
 import eu.kireobat.tooltracker.api.dto.inbound.PatchUserMapRoleDto
+import eu.kireobat.tooltracker.persistence.entity.UserEntity
 import eu.kireobat.tooltracker.persistence.entity.UserMapRoleEntity
 import eu.kireobat.tooltracker.persistence.repository.UserMapRoleRepository
 import org.springframework.http.HttpStatus
@@ -26,17 +27,17 @@ class UserMapRoleService(
     }
 
     fun isEmployee(userId: Int): Boolean {
-        return hasRoles(userId, listOf(SimpleGrantedAuthority(roleService.getRoleById(3).getOrElse { throw ResponseStatusException(HttpStatus.NOT_FOUND,"Could not find employee role") }.name)))
+        return hasRoles(userId, listOf(SimpleGrantedAuthority(roleService.getRoleById(3).getOrElse { throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Could not find employee role") }.name)))
+    }
+    fun isAdmin(userId: Int): Boolean {
+        return hasRoles(userId, listOf(SimpleGrantedAuthority(roleService.getRoleById(0).getOrElse { throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Could not find admin role") }.name)))
     }
 
-    fun create(usersMapRolesDto: PatchUserMapRoleDto): UserMapRoleEntity {
-
-        val userEntity = userService.findByAuthentication()
-
+    fun create(usersMapRolesDto: PatchUserMapRoleDto, overrideUser: UserEntity? = null): UserMapRoleEntity {
         val userMapRoleEntity = UserMapRoleEntity(
             user = userService.findById(usersMapRolesDto.userId).getOrElse { throw ResponseStatusException(HttpStatus.NOT_FOUND,"Could not find user with id (${usersMapRolesDto.userId})") },
             role = roleService.getRoleById(usersMapRolesDto.roleId).getOrElse { throw ResponseStatusException(HttpStatus.NOT_FOUND,"Could not find role with id (${usersMapRolesDto.roleId})") },
-            createdBy = userEntity,
+            createdBy = overrideUser ?: userService.findByAuthentication(),
         )
 
         return userMapRoleRepository.save(userMapRoleEntity)
