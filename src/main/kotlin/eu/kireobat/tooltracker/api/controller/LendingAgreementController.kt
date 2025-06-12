@@ -1,6 +1,7 @@
 package eu.kireobat.tooltracker.api.controller
 
 import eu.kireobat.tooltracker.api.dto.inbound.CreateLendingAgreementDto
+import eu.kireobat.tooltracker.api.dto.inbound.PatchLendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.LendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
@@ -56,5 +57,11 @@ class LendingAgreementController(
         @RequestParam lentBefore: ZonedDateTime?,
     ): ResponseEntity<ToolTrackerPageDto<LendingAgreementDto>> {
         return ResponseEntity.ok(lendingAgreementService.findAgreements(pageable, toolId, borrowerId, lentAfter, lentBefore))
+    }
+
+    @PatchMapping("/agreements/{id}/patch")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    fun patchAgreement(@RequestBody patchLendingAgreementDto: PatchLendingAgreementDto): ResponseEntity<LendingAgreementDto> {
+        return ResponseEntity.ok(lendingAgreementService.patch(patchLendingAgreementDto).toLendingAgreementDto())
     }
 }
