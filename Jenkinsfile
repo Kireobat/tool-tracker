@@ -96,7 +96,17 @@ pipeline {
                             )
                         }
 
-                        def createContainer = { token, name, hostPort, postgresUrl, postgresUser, postgresPass ->
+                        def createImage = {imageName -> 
+                            def response = httpRequest(
+                                url: "https://docker.kireobat.eu/api/endpoints/2/docker/images/create?fromImage=${imageName}&tag=latest",
+                                httpMode: 'POST',
+                                contentType: 'APPLICATION_JSON',
+                                customHeaders: [[name: 'Authorization', value: "Bearer ${token}"]]
+                            )
+                            return response.status == 200 || response.status == 201
+                        }
+
+                        def createContainer = {imageName, token, name, hostPort, postgresUrl, postgresUser, postgresPass ->
                             def encodedName = URLEncoder.encode(name, 'UTF-8')
                             def deployResponse = httpRequest(
                                 url: "https://docker.kireobat.eu/api/endpoints/2/docker/containers/create?name=${encodedName}",
@@ -104,7 +114,7 @@ pipeline {
                                 contentType: 'APPLICATION_JSON',
                                 customHeaders: [[name: 'Authorization', value: "Bearer ${token}"]],
                                 requestBody: """{
-                                    "Image": "kireobat/tool-tracker:latest",
+                                    "Image": "${imageName}:latest",
                                     "Env": [
                                         "SPRING_DATASOURCE_URL=${postgresUrl}/${postgresUser}",
                                         "SPRING_DATASOURCE_USER=${postgresUser}",
@@ -135,12 +145,18 @@ pipeline {
                         // =============================================
                         def token = getPortainerToken(PORTAINER_USERNAME, PORTAINER_PASSWORD) // Fix credentials here
                         def containerName = "tool-tracker"
+                        def imageName = "kireobat/tool-tracker"
                         def hostPort = null
 
                         def existingContainer = findContainerByName(token, containerName)
                         if (existingContainer) {
                             hostPort = extractHostPort(existingContainer)
                             stopAndRemoveContainer(token, existingContainer.Id)
+                        }
+
+                        // Ensure the Docker image is available
+                        if (!createImage(imageName)) {
+                            error "Failed to pull Docker image: ${imageName}"
                         }
 
                         def containerId = createContainer(
