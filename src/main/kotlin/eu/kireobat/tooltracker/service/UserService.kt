@@ -3,7 +3,6 @@ package eu.kireobat.tooltracker.service
 import eu.kireobat.tooltracker.api.dto.inbound.LoginDto
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterUserDto
 import eu.kireobat.tooltracker.persistence.entity.UserEntity
-import eu.kireobat.tooltracker.persistence.entity.UserMapRoleEntity
 import eu.kireobat.tooltracker.persistence.repository.UserRepository
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.context.SecurityContextHolder
@@ -17,8 +16,6 @@ import kotlin.jvm.optionals.getOrElse
 class UserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val userMapRoleService: UserMapRoleService,
-    private val roleService: RoleService,
 ) {
 
     fun registerUserByPassword(registerUserDto: RegisterUserDto, createdBy: UserEntity?): UserEntity {
@@ -46,17 +43,7 @@ class UserService(
             tempSave.createdBy = createdBy.id
         }
 
-        val userEntity = userRepository.saveAndFlush(tempSave)
-
-        val userMapRoleEntity = UserMapRoleEntity(
-            user = userEntity,
-            role = roleService.getRoleById(1).getOrElse { throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Default user role not found") },
-            createdBy = userEntity,
-        )
-
-        userMapRoleService.create(userMapRoleEntity)
-
-        return userEntity
+        return userRepository.saveAndFlush(tempSave)
     }
 
     fun findByEmail(email: String): Optional<UserEntity> {
