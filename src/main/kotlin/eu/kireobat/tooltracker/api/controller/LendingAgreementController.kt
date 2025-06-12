@@ -34,18 +34,20 @@ class LendingAgreementController(
 ) {
 
     @PostMapping("/agreements/create")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun createAgreement(@RequestBody createLendingAgreementDto: CreateLendingAgreementDto): ResponseEntity<LendingAgreementDto> {
         return ResponseEntity.ok(lendingAgreementService.create(createLendingAgreementDto).toLendingAgreementDto())
     }
 
     @GetMapping("/agreements/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getAgreement(@PathVariable id: Int): ResponseEntity<LendingAgreementDto> {
         return ResponseEntity.ok(lendingAgreementService.findById(id).orElseThrow { throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Could not find lending agreement with id ($id)") }.toLendingAgreementDto())
     }
 
     @GetMapping("/agreements")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getAgreements(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam toolId: Int?,

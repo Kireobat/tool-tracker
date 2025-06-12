@@ -18,6 +18,7 @@ import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import java.time.ZonedDateTime
@@ -31,17 +32,20 @@ import java.time.ZonedDateTime
 class ToolServiceEventController(private val toolServiceEventService: ToolServiceEventService) {
 
     @PostMapping("/tools/service/create")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun createServiceEvent(@RequestBody createToolServiceEventDto: CreateToolServiceEventDto): ResponseEntity<ToolServiceEventDto> {
         return ResponseEntity.ok(toolServiceEventService.create(createToolServiceEventDto).toToolServiceEventDto())
     }
 
     @GetMapping("/tools/service/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getServiceEventsById(@PathVariable id: Int): ResponseEntity<ToolServiceEventDto> {
         return ResponseEntity.ok(toolServiceEventService.findById(id).orElseThrow { throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Could not find service event with id ($id)") }.toToolServiceEventDto())
     }
 
     @GetMapping("/tools/service")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getServiceEvents(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam toolId: Int? = null,

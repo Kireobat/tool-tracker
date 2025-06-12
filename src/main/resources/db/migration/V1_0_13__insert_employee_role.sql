@@ -1,0 +1,1 @@
+INSERT INTO tool_tracker.roles (id, name, description, created_time, created_by) VALUES (3, 'ROLE_EMPLOYEE','employees of VerktøyPartner AS', current_date, 0) ON CONFLICT (id) DO NOTHING;

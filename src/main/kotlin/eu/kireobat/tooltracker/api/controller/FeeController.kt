@@ -28,17 +28,18 @@ import org.springframework.web.server.ResponseStatusException
 @ApiResponse(responseCode = "200", description = "OK")
 @ApiResponse(responseCode = "400", description = "Bad Request", content = [Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = Schema(implementation = ToolTrackerResponseDto::class))])
 @ApiResponse(responseCode = "500", description = "Internal Server Error", content = [Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = Schema(implementation = ToolTrackerResponseDto::class))])
-@Tag(name = "Tool endpoints", description = "Endpoints related to managing tools")
+@Tag(name = "Fee endpoints", description = "Endpoints related to managing fees")
 class FeeController(
     private val feeService: FeeService,
 ) {
     @PostMapping("/fees/create")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun registerTool(@RequestBody createFeeDto: CreateFeeDto): ResponseEntity<FeeDto> {
         return ResponseEntity.ok(feeService.createFee(createFeeDto).toFeeDto())
     }
 
     @GetMapping("/fees/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getTool(
         @PathVariable id: Int
     ): ResponseEntity<FeeDto> {
@@ -47,6 +48,7 @@ class FeeController(
     }
 
     @GetMapping("/fees")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getFees(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam lendingAgreementId: Int? = null,

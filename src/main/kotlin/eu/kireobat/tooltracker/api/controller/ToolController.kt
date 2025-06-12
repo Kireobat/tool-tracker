@@ -33,12 +33,13 @@ class ToolController(
     private val toolService: ToolService,
 ) {
     @PostMapping("/tools/register")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun registerTool(@RequestBody registerToolDto: RegisterToolDto): ResponseEntity<ToolDto> {
         return ResponseEntity.ok(toolService.registerTool(registerToolDto).toToolDto())
     }
 
     @GetMapping("/tools/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getTool(
         @PathVariable id: Int
     ): ResponseEntity<ToolDto> {
@@ -47,6 +48,7 @@ class ToolController(
     }
 
     @GetMapping("/tools")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getTools(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam name: String?,

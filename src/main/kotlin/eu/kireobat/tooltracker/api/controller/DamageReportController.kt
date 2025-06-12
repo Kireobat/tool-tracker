@@ -33,18 +33,20 @@ class DamageReportController(
 ) {
 
     @PostMapping("/reports/create")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun createReport(@RequestBody createDamageReportDto: CreateDamageReportDto): ResponseEntity<DamageReportDto> {
         return ResponseEntity.ok(damageReportService.create(createDamageReportDto).toDamageReportDto())
     }
 
     @GetMapping("/reports/{id}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getReport(@PathVariable id: Int): ResponseEntity<DamageReportDto> {
         return ResponseEntity.ok(damageReportService.findById(id).orElseThrow { throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Could not find damage report with id ($id)") }.toDamageReportDto())
     }
 
     @GetMapping("/reports")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getReports(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam lendingAgreementId: Int?,
