@@ -160,6 +160,7 @@ pipeline {
                         }
 
                         def containerId = createContainer(
+                            imageName,
                             token,
                             containerName,
                             hostPort,
