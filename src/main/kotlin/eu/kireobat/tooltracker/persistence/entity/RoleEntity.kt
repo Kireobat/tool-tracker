@@ -1,5 +1,6 @@
 package eu.kireobat.tooltracker.persistence.entity
 
+import eu.kireobat.tooltracker.api.dto.outbound.RoleDto
 import jakarta.persistence.*
 import java.time.ZonedDateTime
 
@@ -26,3 +27,5 @@ data class RoleEntity (
     @Column(name="modified_time")
     var modifiedTime: ZonedDateTime? = null,
 )
+
+fun RoleEntity.toRoleDto() = RoleDto(id, name, description, createdTime, createdBy.id, modifiedTime, modifiedBy?.id)

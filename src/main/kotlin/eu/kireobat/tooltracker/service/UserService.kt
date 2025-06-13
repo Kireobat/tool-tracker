@@ -2,8 +2,12 @@ package eu.kireobat.tooltracker.service
 
 import eu.kireobat.tooltracker.api.dto.inbound.LoginDto
 import eu.kireobat.tooltracker.api.dto.inbound.RegisterUserDto
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
+import eu.kireobat.tooltracker.api.dto.outbound.UserDto
 import eu.kireobat.tooltracker.persistence.entity.UserEntity
+import eu.kireobat.tooltracker.persistence.entity.toUserDto
 import eu.kireobat.tooltracker.persistence.repository.UserRepository
+import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -78,10 +82,27 @@ class UserService(
 
     fun hasAuthentication(): Boolean {
 
-        return when (val principal = SecurityContextHolder.getContext().authentication.principal) {
+        return when (SecurityContextHolder.getContext().authentication.principal) {
             // email/pass users must have email
             is CustomUserDetails -> true
             else -> false
         }
+    }
+
+    fun findUsers(pageable: Pageable, name: String?, email: String?): ToolTrackerPageDto<UserDto> {
+
+        val page = userRepository.findAllWithFilter(
+            pageable,
+            name,
+            email
+        )
+
+        return ToolTrackerPageDto(
+            page.content.map {entity -> entity.toUserDto()},
+            page.totalElements,
+            pageable.pageNumber,
+            pageable.pageSize
+        )
+
     }
 }
