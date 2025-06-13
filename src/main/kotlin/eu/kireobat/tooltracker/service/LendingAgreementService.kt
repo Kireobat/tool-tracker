@@ -4,9 +4,11 @@ import eu.kireobat.tooltracker.api.dto.inbound.CreateLendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.inbound.PatchLendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.LendingAgreementDto
 import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerPageDto
+import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
 import eu.kireobat.tooltracker.persistence.entity.LendingAgreementEntity
 import eu.kireobat.tooltracker.persistence.entity.toLendingAgreementDto
 import eu.kireobat.tooltracker.persistence.repository.LendingAgreementRepository
+import eu.kireobat.tooltracker.persistence.repository.ToolRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -18,21 +20,34 @@ class LendingAgreementService(
     private val lendingAgreementRepository: LendingAgreementRepository,
     private val toolService: ToolService,
     private val userService: UserService,
+    private val toolRepository: ToolRepository,
 ) {
 
     fun create(createLendingAgreementDto: CreateLendingAgreementDto): LendingAgreementEntity {
 
         val userEntity = userService.findByAuthentication()
 
-        return lendingAgreementRepository.saveAndFlush(
+        val toolEntity = toolService.findById(createLendingAgreementDto.toolId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool with id (${createLendingAgreementDto.toolId})") }
+
+        if (toolEntity.status != ToolStatusEnum.AVAILABLE) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Tool with id (${createLendingAgreementDto.toolId}) is not available right now")
+        }
+
+        val lendingAgreementEntity = lendingAgreementRepository.saveAndFlush(
             LendingAgreementEntity(
                 borrower = userService.findById(createLendingAgreementDto.borrowerId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find user with id (${createLendingAgreementDto.borrowerId})") },
-                tool = toolService.findById(createLendingAgreementDto.toolId).orElseThrow { throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find tool with id (${createLendingAgreementDto.toolId})") },
+                tool = toolEntity,
                 lendingStartTime = createLendingAgreementDto.lendingStartTime ?: ZonedDateTime.now(),
                 expectedReturnTime = createLendingAgreementDto.expectedReturnTime ?: ZonedDateTime.now().plusDays(7),
                 createdBy = userEntity
             )
         )
+
+        toolEntity.status = ToolStatusEnum.UNAVAILABLE
+
+        toolRepository.saveAndFlush(toolEntity)
+
+        return lendingAgreementEntity
     }
 
     fun findById(id: Int) = lendingAgreementRepository.findById(id)
