@@ -102,3 +102,619 @@ if (!create
 
 ---
 
+_**User**_
+
+How can I return a 400 bad request if a user sends in a RegisterToolDto where the program is unable to parse status?
+
+---
+
+_**Assistant**_
+
+You can handle this in a few ways depending on your Spring Boot setup. Here are the most common approaches:
+
+## Option 1: Global Exception Handler (Recommended)
+
+Create a global exception handler to catch JSON parsing errors:
+
+````kotlin
+package eu.kireobat.tooltracker.api.exception
+
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ControllerAdvice
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.http.converter.HttpMessageNotReadableException
+
+@ControllerAdvice
+class GlobalExceptionHandler {
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<Map<String, String>> {
+        val cause = ex.cause
+        if (cause is InvalidFormatException && cause.targetType == ToolStatusEnum::class.java) {
+            return ResponseEntity.badRequest().body(
+                mapOf(
+                    "error" to "Invalid tool status",
+                    "message" to "Status must be one of: ${ToolStatusEnum.values().joinToString(", ")}"
+                )
+            )
+        }
+        
+        return ResponseEntity.badRequest().body(
+            mapOf(
+                "error" to "Invalid request format",
+                "message" to "Unable to parse request body"
+            )
+        )
+    }
+}
+````
+
+## Option 2: Custom Deserializer
+
+Create a custom deserializer for the enum:
+
+````kotlin
+package eu.kireobat.tooltracker.api.dto.inbound
+
+import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
+
+data class RegisterToolDto(
+    val name: String,
+    val serial: String,
+    val type: Int,
+    val status: ToolStatusEnum? = null
+) {
+    companion object {
+        @JsonCreator
+        @JvmStatic
+        fun createStatus(value: String?): ToolStatusEnum? {
+            return value?.let { 
+                try {
+                    ToolStatusEnum.valueOf(it.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    throw IllegalArgumentException("Invalid status: $it. Valid values are: ${ToolStatusEnum.values().joinToString(", ")}")
+                }
+            }
+        }
+    }
+}
+````
+
+## Option 3: Controller-level Validation
+
+Add validation in your controller:
+
+````kotlin
+@PostMapping("/register")
+fun registerTool(@Valid @RequestBody dto: RegisterToolDto): ResponseEntity<*> {
+    try {
+        // Your registration logic here
+        return ResponseEntity.ok().build()
+    } catch (e: IllegalArgumentException) {
+        return ResponseEntity.badRequest().body(
+            mapOf("error" to e.message)
+        )
+    }
+}
+````
+
+The **Global Exception Handler (Option 1)** is recommended as it handles all JSON parsing errors consistently across your entire application and provides clear error messages to clients.
+
+---
+
+_**User**_
+
+i have tried option 1, but still get a 500 response:
+
+{
+  "success": false,
+  "timestamp": "2025-06-13T11:24:09.788743926Z",
+  "status": "INTERNAL_SERVER_ERROR",
+  "message": "JSON parse error: Cannot deserialize value of type `eu.kireobat.tooltracker.common.enums.ToolStatusEnum` from String \"asdAVAILABLE\": not one of the values accepted for Enum class: [UNAVAILABLE, AVAILABLE, SERVICE]"
+}
+
+---
+
+_**Assistant**_
+
+The issue is that your `HttpMessageNotReadableException` handler is returning a `Map<String, String>`, but your other handlers return `ToolTrackerResponseDto`. The general `Exception` handler is catching the exception first and returning a 500 response.
+
+Fix it by making the `HttpMessageNotReadableException` handler return the same response type and move it above the general exception handler:
+
+````kotlin
+// ...existing code...
+
+@ExceptionHandler(HttpMessageNotReadableException::class)
+fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ToolTrackerResponseDto> {
+    val cause = ex.cause
+    if (cause is InvalidFormatException && cause.targetType == ToolStatusEnum::class.java) {
+        val response = ToolTrackerResponseDto(
+            false, 
+            ZonedDateTime.now(), 
+            HttpStatus.BAD_REQUEST, 
+            "Invalid tool status. Status must be one of: ${ToolStatusEnum.values().joinToString(", ")}"
+        )
+        return ResponseEntity.badRequest().body(response)
+    }
+
+    val response = ToolTrackerResponseDto(
+        false, 
+        ZonedDateTime.now(), 
+        HttpStatus.BAD_REQUEST, 
+        "Invalid request format. Unable to parse request body"
+    )
+    return ResponseEntity.badRequest().body(response)
+}
+
+@ExceptionHandler(Exception::class)
+fun handleException(e: Exception): ResponseEntity<ToolTrackerResponseDto> {
+    logger.error(e.message)
+    val response = e.message?.let {
+        ToolTrackerResponseDto(
+            false, ZonedDateTime.now(), HttpStatus.INTERNAL_SERVER_ERROR, "Server error"
+        )
+    }
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
+}
+// ...existing code...
+````
+
+The key changes:
+1. **Return `ToolTrackerResponseDto`** instead of `Map<String, String>`
+2. **Move the specific handler above the general `Exception` handler** so it gets caught first
+3. **Use consistent response format** with your other handlers
+
+This will now return a proper 400 Bad Request with your standardized response format when an invalid enum value is provided.
+
+---
+
+_**User**_
+
+@workspace  That didn't change anything
+
+---
+
+_**Assistant**_
+
+Looking at your `GlobalControllerAdvice`, I can see you have a global exception handler that should catch JSON parsing errors. The issue you're still getting a 500 response suggests that the `HttpMessageNotReadableException` isn't being caught properly.
+
+Let me check a few things:
+
+1. **Make sure the exception handler is more specific**. Try updating your `handleHttpMessageNotReadable` method to be more comprehensive:
+
+````kotlin
+@ExceptionHandler(HttpMessageNotReadableException::class)
+fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ToolTrackerResponseDto> {
+    logger.error("JSON parsing error", ex)
+    
+    val cause = ex.cause
+    when {
+        cause is InvalidFormatException && cause.targetType == ToolStatusEnum::class.java -> {
+            val response = ToolTrackerResponseDto(
+                false, 
+                ZonedDateTime.now(), 
+                HttpStatus.BAD_REQUEST, 
+                "Invalid tool status. Status must be one of: ${ToolStatusEnum.values().joinToString(", ")}"
+            )
+            return ResponseEntity.badRequest().body(response)
+        }
+        cause is InvalidFormatException -> {
+            val response = ToolTrackerResponseDto(
+                false, 
+                ZonedDateTime.now(), 
+                HttpStatus.BAD_REQUEST, 
+                "Invalid value for field '${cause.propertyName}': ${cause.value}"
+            )
+            return ResponseEntity.badRequest().body(response)
+        }
+        else -> {
+            val response = ToolTrackerResponseDto(
+                false, 
+                ZonedDateTime.now(), 
+                HttpStatus.BAD_REQUEST, 
+                "Invalid request format. Unable to parse request body: ${ex.message}"
+            )
+            return ResponseEntity.badRequest().body(response)
+        }
+    }
+}
+````
+
+2. **Add logging to see what's happening**. The current logging in your `handleException` method only logs the message, not the full stack trace. Try updating it:
+
+````kotlin
+@ExceptionHandler(Exception::class)
+fun handleException(e: Exception): ResponseEntity<ToolTrackerResponseDto> {
+    logger.error("Unhandled exception", e) // This will log the full stack trace
+    val response = ToolTrackerResponseDto(
+        false, 
+        ZonedDateTime.now(), 
+        HttpStatus.INTERNAL_SERVER_ERROR, 
+        "Server error"
+    )
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
+}
+````
+
+3. **Check if there's another exception type being thrown**. The JSON parsing might be throwing a different exception than `HttpMessageNotReadableException`. Add a more general handler to catch JSON processing errors:
+
+````kotlin
+@ExceptionHandler(JsonProcessingException::class)
+fun handleJsonProcessingException(ex: JsonProcessingException): ResponseEntity<ToolTrackerResponseDto> {
+    logger.error("JSON processing error", ex)
+    val response = ToolTrackerResponseDto(
+        false, 
+        ZonedDateTime.now(), 
+        HttpStatus.BAD_REQUEST, 
+        "Invalid JSON format: ${ex.message}"
+    )
+    return ResponseEntity.badRequest().body(response)
+}
+````
+
+The fact that you're still getting a 500 response means the exception isn't being caught by your `HttpMessageNotReadableException` handler, so it's falling through to the generic `Exception` handler.
+
+---
+
+_**User**_
+
+Nothing is being logged. I think the error comes before the global advice controller is able to do anything
+
+---
+
+_**Assistant**_
+
+You're right! If nothing is being logged, the issue is likely that the exception is being handled at a lower level before it reaches your `@ControllerAdvice`. This often happens with Spring Security or servlet-level processing.
+
+Here are a few things to check and try:
+
+## 1. Check if Spring Security is intercepting the request
+
+If you have Spring Security configured, it might be handling the exception before it reaches your controller. Try adding this to your security configuration:
+
+````kotlin
+@Configuration
+@EnableWebSecurity
+class SecurityConfig {
+    
+    @Bean
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        return http
+            // ...existing configuration...
+            .exceptionHandling { exceptions ->
+                exceptions.authenticationEntryPoint { request, response, authException ->
+                    // Let Spring handle it normally, don't intercept here
+                }
+            }
+            .build()
+    }
+}
+````
+
+## 2. Add a servlet filter to catch exceptions earlier
+
+Create a filter that catches exceptions before they're processed:
+
+````kotlin
+package eu.kireobat.tooltracker.config
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import eu.kireobat.tooltracker.api.dto.outbound.ToolTrackerResponseDto
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Component
+import org.springframework.web.filter.OncePerRequestFilter
+import java.time.ZonedDateTime
+import javax.servlet.FilterChain
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+
+@Component
+class ExceptionHandlingFilter(private val objectMapper: ObjectMapper) : OncePerRequestFilter() {
+    
+    private val logger = LoggerFactory.getLogger(ExceptionHandlingFilter::class.java)
+    
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain
+    ) {
+        try {
+            logger.info("Processing request: ${request.method} ${request.requestURI}")
+            filterChain.doFilter(request, response)
+        } catch (e: Exception) {
+            logger.error("Exception caught in filter", e)
+            handleException(response, e)
+        }
+    }
+    
+    private fun handleException(response: HttpServletResponse, e: Exception) {
+        val errorResponse = ToolTrackerResponseDto(
+            false,
+            ZonedDateTime.now(),
+            HttpStatus.BAD_REQUEST,
+            "Request processing error: ${e.message}"
+        )
+        
+        response.status = HttpStatus.BAD_REQUEST.value()
+        response.contentType = "application/json"
+        response.writer.write(objectMapper.writeValueAsString(errorResponse))
+    }
+}
+````
+
+## 3. Add debug logging to see what's happening
+
+Add this to your `application.properties` to enable debug logging:
+
+````properties
+logging.level.org.springframework.web=DEBUG
+logging.level.org.springframework.security=DEBUG
+logging.level.eu.kireobat.tooltracker=DEBUG
+````
+
+## 4. Test with a simple endpoint
+
+Create a test endpoint that deliberately throws an exception to verify your `@ControllerAdvice` is working:
+
+````kotlin
+@RestController
+class TestController {
+    
+    @PostMapping("/test-exception")
+    fun testException(): String {
+        throw RuntimeException("Test exception")
+    }
+}
+````
+
+This will help determine if the issue is with your exception handling setup or something else intercepting the JSON parsing errors.
+
+---
+
+_**User**_
+
+even with debug there is no logging what so ever, its like the request never reaches the backend
+
+---
+
+_**Assistant**_
+
+If there's no logging at all, the request isn't reaching your Spring Boot application. This suggests the issue is at the infrastructure level, not in your code. Here are the most likely causes:
+
+## 1. Check if your application is actually running
+Verify the application started successfully:
+- Check the Spring Boot startup logs
+- Confirm it's listening on the expected port (usually 8080)
+- Test with a simple GET endpoint first
+
+## 2. Network/Infrastructure Issues
+
+Since you mentioned Docker and Jenkins earlier, check:
+
+**Container networking:**
+````bash
+# Check if container is running
+docker ps
+
+# Check container logs
+docker logs <container-name>
+
+# Check if port is accessible
+curl http://localhost:8080/actuator/health
+````
+
+**Reverse proxy/Load balancer:**
+- If you're using nginx or another reverse proxy, check its logs
+- Verify the proxy is forwarding requests to the correct backend
+- Check proxy configuration for request size limits
+
+## 3. Request Size Limits
+
+The request might be getting dropped due to size limits. Add these to your `application.properties`:
+
+````properties
+server.tomcat.max-http-post-size=10MB
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+````
+
+## 4. Quick Test
+
+Create a simple test endpoint to verify connectivity:
+
+````kotlin
+@RestController
+class HealthController {
+    
+    private val logger = LoggerFactory.getLogger(HealthController::class.java)
+    
+    @GetMapping("/test")
+    fun test(): String {
+        logger.info("Test endpoint hit!")
+        return "OK"
+    }
+    
+    @PostMapping("/test-post")
+    fun testPost(@RequestBody body: String): String {
+        logger.info("Test POST endpoint hit with body: $body")
+        return "POST OK"
+    }
+}
+````
+
+## 5. Check Your Request
+
+Verify the request itself:
+- Is the URL correct?
+- Are you sending to the right port?
+- Is the Content-Type header set to `application/json`?
+- Try with a simple curl command first:
+
+````bash
+curl -X POST http://localhost:8080/test-post \
+  -H "Content-Type: application/json" \
+  -d '{"test": "data"}'
+````
+
+The fact that you're getting a response (even if it's a 500) suggests the request is reaching *something*, but it might be a reverse proxy or load balancer that's handling the error before it gets to your Spring Boot app.
+
+---
+
+_**User**_
+
+Could it be that swagge-ui or something tries to parse the Enum before it sends it to the endpoint
+
+---
+
+_**Assistant**_
+
+Yes, that's very likely! Swagger UI (or OpenAPI) often tries to validate and parse request bodies client-side before sending them to your backend. This could explain why you're not seeing any logs in your Spring Boot application.
+
+Here are a few things to check:
+
+## 1. Test with a direct HTTP client instead of Swagger UI
+
+Try the same request with curl or Postman to see if the issue persists:
+
+````bash
+curl -X POST http://localhost:8080/your-endpoint \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Tool",
+    "serial": "12345",
+    "type": 1,
+    "status": "INVALID_STATUS"
+  }'
+````
+
+## 2. Check your OpenAPI/Swagger configuration
+
+If you have OpenAPI annotations, check how the enum is defined:
+
+````kotlin
+package eu.kireobat.tooltracker.api.dto.inbound
+
+import eu.kireobat.tooltracker.common.enums.ToolStatusEnum
+import io.swagger.v3.oas.annotations.media.Schema
+
+data class RegisterToolDto(
+    val name: String,
+    val serial: String,
+    val type: Int,
+    @Schema(description = "Tool status", allowableValues = ["AVAILABLE", "UNAVAILABLE", "SERVICE"])
+    val status: ToolStatusEnum? = null
+)
+````
+
+## 3. Configure OpenAPI to be less strict
+
+Add this configuration to allow invalid enum values to reach your backend:
+
+````kotlin
+package eu.kireobat.tooltracker.config
+
+import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.info.Info
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class OpenApiConfig {
+    
+    @Bean
+    fun customOpenAPI(): OpenAPI {
+        return OpenAPI()
+            .info(Info().title("Tool Tracker API").version("1.0"))
+    }
+}
+````
+
+## 4. Check your enum definition
+
+Make sure your enum can handle case-insensitive parsing:
+
+````kotlin
+// filepath: src/main/kotlin/eu/kireobat/tooltracker/common/enums/ToolStatusEnum.kt
+package eu.kireobat.tooltracker.common.enums
+
+import com.fasterxml.jackson.annotation.JsonCreator
+
+enum class ToolStatusEnum {
+    AVAILABLE,
+    UNAVAILABLE,
+    SERVICE;
+    
+    companion object {
+        @JsonCreator
+        @JvmStatic
+        fun fromString(value: String): ToolStatusEnum {
+            return values().find { it.name.equals(value, ignoreCase = true) }
+                ?: throw IllegalArgumentException("Invalid status: $value. Valid values are: ${values().joinToString(", ")}")
+        }
+    }
+}
+````
+
+If the direct HTTP request works but Swagger UI doesn't, then Swagger UI is indeed doing client-side validation and preventing the request from reaching your backend when the enum value is invalid.
+
+---
+
+_**User**_
+
+make this work on windows:
+
+curl -X POST http://localhost:8080/tool-tracker/api/v1/tools/register -H "Content-Type: application/json" -d '{ "name": "Test Tool", "serial": "12345", "type": 1, "status": "INVALID_STATUS" }'
+
+---
+
+_**Assistant**_
+
+On Windows, you need to escape the quotes differently. Here are a few options:
+
+## Option 1: Use double quotes and escape inner quotes
+````cmd
+curl -X POST http://localhost:8080/tool-tracker/api/v1/tools/register -H "Content-Type: application/json" -d "{ \"name\": \"Test Tool\", \"serial\": \"12345\", \"type\": 1, \"status\": \"INVALID_STATUS\" }"
+````
+
+## Option 2: Use PowerShell with single quotes
+````powershell
+curl -X POST http://localhost:8080/tool-tracker/api/v1/tools/register -H 'Content-Type: application/json' -d '{ "name": "Test Tool", "serial": "12345", "type": 1, "status": "INVALID_STATUS" }'
+````
+
+## Option 3: Save JSON to a file and reference it
+Create a file `test.json`:
+````json
+{
+  "name": "Test Tool",
+  "serial": "12345",
+  "type": 1,
+  "status": "INVALID_STATUS"
+}
+````
+
+Then use:
+````cmd
+curl -X POST http://localhost:8080/tool-tracker/api/v1/tools/register -H "Content-Type: application/json" -d @test.json
+````
+
+## Option 4: Use Invoke-RestMethod in PowerShell (recommended)
+````powershell
+$body = @{
+    name = "Test Tool"
+    serial = "12345"
+    type = 1
+    status = "INVALID_STATUS"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8080/tool-tracker/api/v1/tools/register" -Method POST -Body $body -ContentType "application/json"
+````
+
+The first option (escaping with backslashes) is usually the most straightforward for Command Prompt on Windows.
+
+---
+

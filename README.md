@@ -81,3 +81,13 @@ The only unauthenticated endpoint except for login and register is the `tools` a
 #### In Production
 
 In production you will have to contact a system admin if you want any roles. For [https://api.kireobat.eu/tool-tracker/](https://api.kireobat.eu/tool-tracker/) that would be me.
+
+### Common problems
+
+If you are using intelliJ and not running `mvn spring-boot:run "-Dspring.profiles.active=local"` (windows) in the cli, but instead pressing the run button you may get this error:
+
+```
+Caused by: org.springframework.util.PlaceholderResolutionException: Could not resolve placeholder 'SPRING_DATASOURCE_URL' in value "${SPRING_DATASOURCE_URL}" <-- "${spring.datasource.url}"
+```
+
+This is due to you not running the program with the local profile, and therefore it expects some env variables. To fix this in IntelliJ you can click the `Run / Debug Configurations` button, click `More Actions` on `ToolTrackerApplication`, then click `Edit` and in `Active profiles` write `local`

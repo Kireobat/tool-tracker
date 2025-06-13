@@ -40,7 +40,7 @@ class FeeController(
 
     @GetMapping("/fees/{id}")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    fun getTool(
+    fun getFee(
         @PathVariable id: Int
     ): ResponseEntity<FeeDto> {
         return ResponseEntity.ok(feeService.findById(id).orElseThrow { throw ResponseStatusException(
