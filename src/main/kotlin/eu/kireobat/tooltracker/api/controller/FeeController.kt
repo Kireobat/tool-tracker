@@ -34,7 +34,7 @@ class FeeController(
 ) {
     @PostMapping("/fees/create")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    fun registerTool(@RequestBody createFeeDto: CreateFeeDto): ResponseEntity<FeeDto> {
+    fun createFee(@RequestBody createFeeDto: CreateFeeDto): ResponseEntity<FeeDto> {
         return ResponseEntity.ok(feeService.createFee(createFeeDto).toFeeDto())
     }
 
