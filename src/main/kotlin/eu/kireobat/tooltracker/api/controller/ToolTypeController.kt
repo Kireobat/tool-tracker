@@ -46,7 +46,6 @@ class ToolTypeController(
     }
 
     @GetMapping("/types")
-    @PreAuthorize("hasRole('EMPLOYEE')")
     fun getToolTypes(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
         @RequestParam name: String?
