@@ -39,7 +39,7 @@ class RoleController(
     private val roleService: RoleService
 ) {
 
-    @GetMapping("/roles/give")
+    @PostMapping("/roles/give")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Assign a role to a user", description = "Assigns a role to a user based on the provided details. Requires ADMIN role.")
     fun giveRole(
@@ -48,7 +48,7 @@ class RoleController(
         return ResponseEntity.ok(userMapRoleService.create(patchUserMapRoleDto).toUserMapRoleDto())
     }
 
-    @GetMapping("/roles/take")
+    @PostMapping("/roles/take")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Remove a role from a user", description = "Removes a role from a user based on the provided details. Requires ADMIN role.")
     fun takeRole(
