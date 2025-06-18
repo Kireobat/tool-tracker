@@ -13,6 +13,8 @@ import eu.kireobat.tooltracker.persistence.entity.toUserDto
 import eu.kireobat.tooltracker.service.RoleService
 import eu.kireobat.tooltracker.service.UserMapRoleService
 import eu.kireobat.tooltracker.service.UserService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -47,6 +49,7 @@ class UserController(
 ) {
 
     @PostMapping("/user/register")
+    @Operation(summary = "Register a new user", description = "Registers a new user based on the provided details. The user will be assigned a default role. Does not require authentication.")
     fun registerUser(
         @RequestBody registerUserDto: RegisterUserDto,
         request: HttpServletRequest
@@ -70,6 +73,7 @@ class UserController(
     }
 
     @PostMapping("/user/login")
+    @Operation(summary = "Login a user", description = "Logs in a user based on the provided credentials. If successful, the user will be authenticated and a session will be created.")
     fun login(
         @RequestBody loginDto: LoginDto,
         request: HttpServletRequest,
@@ -90,6 +94,7 @@ class UserController(
 
     @GetMapping("/users/{id}")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get a user by ID", description = "Retrieves a user by their ID. Requires EMPLOYEE role.")
     fun getUser(
         @PathVariable id: Int
     ): ResponseEntity<UserDto> {
@@ -99,9 +104,12 @@ class UserController(
 
     @GetMapping("/users")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get all users", description = "Retrieves a paginated list of all users, optionally filtered by name or email. Requires EMPLOYEE role.")
     fun getUsers(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @Parameter(description = "Filter by user name (partial match)", example = "John Fortnite")
         @RequestParam name: String?,
+        @Parameter(description = "Filter by user email (partial match)", example = "your.mail@gmail.com")
         @RequestParam email: String?
     ): ResponseEntity<ToolTrackerPageDto<UserDto>> {
         return ResponseEntity.ok(userService.findUsers(pageable, name, email))

@@ -5,6 +5,7 @@ import eu.kireobat.tooltracker.api.dto.outbound.UserDto
 import eu.kireobat.tooltracker.persistence.entity.toUserDto
 import eu.kireobat.tooltracker.service.UserMapRoleService
 import eu.kireobat.tooltracker.service.UserService
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -29,6 +30,7 @@ class AuthController(
 
     @GetMapping("/auth/isEmployee")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Check if the authenticated user is an employee", description = "Returns true if the authenticated user has the EMPLOYEE role, 401 if not.")
     fun isEmployee(): ResponseEntity<Boolean> {
         val userEntity = userService.findByAuthentication()
         return ResponseEntity.ok(userMapRoleService.isEmployee(userEntity.id))
@@ -36,6 +38,7 @@ class AuthController(
 
     @GetMapping("/auth/isAdmin")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Check if the authenticated user is an admin", description = "Returns true if the authenticated user has the ADMIN role, 401 if not.")
     fun isAdmin(): ResponseEntity<Boolean> {
         val userEntity = userService.findByAuthentication()
         return ResponseEntity.ok(userMapRoleService.isAdmin(userEntity.id))
@@ -43,6 +46,7 @@ class AuthController(
 
     @GetMapping("/auth/profile")
     @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get the profile of the authenticated user", description = "Returns the profile information of the authenticated user.")
     fun getProfile(): ResponseEntity<UserDto> {
         return ResponseEntity.ok(userService.findByAuthentication().toUserDto())
     }

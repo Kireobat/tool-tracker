@@ -8,6 +8,8 @@ import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_PAGE_SIZE_INT
 import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_SORT_NO_DIRECTION
 import eu.kireobat.tooltracker.persistence.entity.toDamageReportDto
 import eu.kireobat.tooltracker.service.DamageReportService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -34,12 +36,14 @@ class DamageReportController(
 
     @PostMapping("/reports/create")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Create a new damage report", description = "Creates a new damage report based on the provided details. Requires EMPLOYEE role.")
     fun createReport(@RequestBody createDamageReportDto: CreateDamageReportDto): ResponseEntity<DamageReportDto> {
         return ResponseEntity.ok(damageReportService.create(createDamageReportDto).toDamageReportDto())
     }
 
     @GetMapping("/reports/{id}")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get a damage report by ID", description = "Retrieves a damage report by its ID. Requires EMPLOYEE role.")
     fun getReport(@PathVariable id: Int): ResponseEntity<DamageReportDto> {
         return ResponseEntity.ok(damageReportService.findById(id).orElseThrow { throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Could not find damage report with id ($id)") }.toDamageReportDto())
@@ -47,9 +51,12 @@ class DamageReportController(
 
     @GetMapping("/reports")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get all damage reports", description = "Retrieves a paginated list of all damage reports, optionally filtered by lending agreement ID or tool ID. Requires EMPLOYEE role.")
     fun getReports(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @Parameter(description = "Filter by lending agreement ID", example = "1")
         @RequestParam lendingAgreementId: Int?,
+        @Parameter(description = "Filter by tool ID", example = "1")
         @RequestParam toolId: Int?,
     ): ResponseEntity<ToolTrackerPageDto<DamageReportDto>> {
         return ResponseEntity.ok(damageReportService.findReports(pageable, lendingAgreementId, toolId))

@@ -2,10 +2,14 @@ package eu.kireobat.tooltracker.api.dto.inbound
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException
+import io.swagger.v3.oas.annotations.media.Schema
 
 data class RegisterUserDto(
+    @Schema(description = "Name of the user", example = "John Doe")
     val name: String,
+    @Schema(description = "Email address of the user",example = "this@mail.com")
     val email: String,
+    @Schema(description = "Password for the user account", example = "password123")
     val password: String,
 )
 

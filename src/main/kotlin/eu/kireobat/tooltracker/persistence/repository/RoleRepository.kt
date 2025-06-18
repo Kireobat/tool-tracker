@@ -17,6 +17,6 @@ interface RoleRepository: JpaRepository<RoleEntity, Int> {
     fun findAllWithFilter(
         pageable: Pageable,
         @Param("name") name: String?,
-        @Param("description") email: String?
+        @Param("description") description: String?
     ): Page<RoleEntity>
 }

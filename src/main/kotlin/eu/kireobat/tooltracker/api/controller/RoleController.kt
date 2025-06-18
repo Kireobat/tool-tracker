@@ -11,6 +11,8 @@ import eu.kireobat.tooltracker.persistence.entity.toRoleDto
 import eu.kireobat.tooltracker.persistence.entity.toUserMapRoleDto
 import eu.kireobat.tooltracker.service.RoleService
 import eu.kireobat.tooltracker.service.UserMapRoleService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -39,6 +41,7 @@ class RoleController(
 
     @GetMapping("/roles/give")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Assign a role to a user", description = "Assigns a role to a user based on the provided details. Requires ADMIN role.")
     fun giveRole(
         @RequestBody patchUserMapRoleDto: PatchUserMapRoleDto
     ): ResponseEntity<UserMapRoleDto> {
@@ -47,6 +50,7 @@ class RoleController(
 
     @GetMapping("/roles/take")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Remove a role from a user", description = "Removes a role from a user based on the provided details. Requires ADMIN role.")
     fun takeRole(
         @RequestBody patchUserMapRoleDto: PatchUserMapRoleDto
     ): ResponseEntity<ToolTrackerResponseDto> {
@@ -56,6 +60,7 @@ class RoleController(
 
     @GetMapping("/roles/{id}")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get a role by ID", description = "Retrieves a role by its ID. Requires EMPLOYEE role.")
     fun getRole(
         @PathVariable id: Int
     ): ResponseEntity<RoleDto> {
@@ -65,11 +70,14 @@ class RoleController(
 
     @GetMapping("/roles")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get all roles", description = "Retrieves a paginated list of all roles, optionally filtered by name or description. Requires EMPLOYEE role.")
     fun getRoles(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @Parameter(description = "Filter by role name (partial match)", example = "ADMIN")
         @RequestParam name: String?,
-        @RequestParam email: String?
+        @Parameter(description = "Filter by role description (partial match)", example = "full access")
+        @RequestParam description: String?
     ): ResponseEntity<ToolTrackerPageDto<RoleDto>> {
-        return ResponseEntity.ok(roleService.findRoles(pageable, name, email))
+        return ResponseEntity.ok(roleService.findRoles(pageable, name, description))
     }
 }

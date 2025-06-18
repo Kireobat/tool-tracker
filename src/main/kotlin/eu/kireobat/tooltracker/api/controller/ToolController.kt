@@ -11,6 +11,8 @@ import eu.kireobat.tooltracker.persistence.entity.toToolDto
 import eu.kireobat.tooltracker.service.ToolService
 import eu.kireobat.tooltracker.service.UserMapRoleService
 import eu.kireobat.tooltracker.service.UserService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -38,11 +40,13 @@ class ToolController(
 ) {
     @PostMapping("/tools/register")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Register a new tool", description = "Registers a new tool based on the provided details. Requires EMPLOYEE role.")
     fun registerTool(@RequestBody registerToolDto: RegisterToolDto): ResponseEntity<ToolDto> {
         return ResponseEntity.ok(toolService.registerTool(registerToolDto).toToolDto())
     }
 
     @GetMapping("/tools/{id}")
+    @Operation(summary = "Get a tool by ID", description = "Retrieves a tool by its ID. If the tool is not available, access is restricted based on user authentication and role.")
     fun getTool(
         @PathVariable id: Int
     ): ResponseEntity<ToolDto> {
@@ -60,11 +64,16 @@ class ToolController(
     }
 
     @GetMapping("/tools")
+    @Operation(summary = "Get all tools", description = "Retrieves a paginated list of all tools, optionally filtered by name, serial number, tool type ID, or status. If the user is not authenticated or does not have the EMPLOYEE role, only available tools are returned.")
     fun getTools(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @Parameter(description = "Filter by tool name (partial match)", example = "Hammer")
         @RequestParam name: String?,
+        @Parameter(description = "Filter by tool serial number (partial match)", example = "HM001")
         @RequestParam serial: String?,
+        @Parameter(description = "Filter by tool type ID", example = "1")
         @RequestParam toolTypeId: Int?,
+        @Parameter(description = "Filter by tool status (if not logged in only AVAILABLE is possible)", example = "AVAILABLE")
         @RequestParam status: ToolStatusEnum?
     ): ResponseEntity<ToolTrackerPageDto<ToolDto>> {
 

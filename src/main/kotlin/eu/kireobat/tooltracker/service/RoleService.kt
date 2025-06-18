@@ -18,12 +18,12 @@ class RoleService(
         return roleRepository.findById(id)
     }
 
-    fun findRoles(pageable: Pageable, name: String?, email: String?): ToolTrackerPageDto<RoleDto> {
+    fun findRoles(pageable: Pageable, name: String?, description: String?): ToolTrackerPageDto<RoleDto> {
 
         val page = roleRepository.findAllWithFilter(
             pageable,
             name,
-            email
+            description
         )
 
         return ToolTrackerPageDto(

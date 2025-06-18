@@ -8,6 +8,8 @@ import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_PAGE_SIZE_INT
 import eu.kireobat.tooltracker.common.Constants.Companion.DEFAULT_SORT_NO_DIRECTION
 import eu.kireobat.tooltracker.persistence.entity.toToolServiceEventDto
 import eu.kireobat.tooltracker.service.ToolServiceEventService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -33,12 +35,14 @@ class ToolServiceEventController(private val toolServiceEventService: ToolServic
 
     @PostMapping("/tools/service/create")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Create a new tool service event", description = "Creates a new tool service event based on the provided details. Requires EMPLOYEE role.")
     fun createServiceEvent(@RequestBody createToolServiceEventDto: CreateToolServiceEventDto): ResponseEntity<ToolServiceEventDto> {
         return ResponseEntity.ok(toolServiceEventService.create(createToolServiceEventDto).toToolServiceEventDto())
     }
 
     @GetMapping("/tools/service/{id}")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get a tool service event by ID", description = "Retrieves a tool service event by its ID. Requires EMPLOYEE role.")
     fun getServiceEventsById(@PathVariable id: Int): ResponseEntity<ToolServiceEventDto> {
         return ResponseEntity.ok(toolServiceEventService.findById(id).orElseThrow { throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Could not find service event with id ($id)") }.toToolServiceEventDto())
@@ -46,12 +50,18 @@ class ToolServiceEventController(private val toolServiceEventService: ToolServic
 
     @GetMapping("/tools/service")
     @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get all tool service events", description = "Retrieves a paginated list of all tool service events, optionally filtered by tool ID, damage report ID, lending agreement ID, or service date range. Requires EMPLOYEE role.")
     fun getServiceEvents(
         @ParameterObject @PageableDefault(size = DEFAULT_PAGE_SIZE_INT, sort  = [DEFAULT_SORT_NO_DIRECTION]) pageable: Pageable,
+        @Parameter(description = "Filter by tool ID", example = "1")
         @RequestParam toolId: Int? = null,
+        @Parameter(description = "Filter by damage report ID", example = "1")
         @RequestParam damageReportId: Int? = null,
+        @Parameter(description = "Filter by lending agreement ID", example = "1")
         @RequestParam lendingAgreementId: Int? = null,
+        @Parameter(description = "Filter by service date range start", example = "2023-01-01T00:00:00Z")
         @RequestParam searchPeriodStart: ZonedDateTime? = null,
+        @Parameter(description = "Filter by service date range stop", example = "2023-12-31T23:59:59Z")
         @RequestParam searchPeriodStop: ZonedDateTime? = null,
         ): ResponseEntity<ToolTrackerPageDto<ToolServiceEventDto>> {
         return ResponseEntity.ok(toolServiceEventService.findServiceEvents(pageable, toolId, damageReportId, lendingAgreementId, searchPeriodStart, searchPeriodStop))
